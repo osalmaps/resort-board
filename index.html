@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10302b">
+<title>Front Desk — Room Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16201d;--mist:#eef1ef;--muted:#6b7682;--line:#dfe4e1;--surface:#ffffff;
+    --free:#1f9d6b;--free-press:#188257;--occupied:#d9483b;--occupied-press:#bb3b30;
+    --arrive:#2563eb;--arrive-press:#1d4fc4;--teal:#0e7c7b;
+    --radius:18px;--shadow:0 1px 2px rgba(22,32,29,.06), 0 8px 24px rgba(22,32,29,.06);
+    --disp:'Space Grotesk','Noto Sans Thai',sans-serif;
+    --body:'Inter','Noto Sans Thai',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{font-family:var(--body);background:var(--mist);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+  header{margin-bottom:18px}
+  .topline{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .rightcol{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .eyebrow{font-family:var(--disp);letter-spacing:.18em;text-transform:uppercase;font-size:.7rem;font-weight:600;color:var(--teal);margin:0 0 4px}
+  h1{font-family:var(--disp);font-size:1.9rem;font-weight:700;margin:0;letter-spacing:-.01em}
+  .underline{height:3px;width:46px;background:var(--teal);border-radius:3px;margin-top:10px}
+  .langtog{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+  .seg{appearance:none;border:0;background:transparent;font-family:var(--body);font-size:.78rem;font-weight:600;color:var(--muted);padding:6px 12px;cursor:pointer}
+  .seg.active{background:var(--ink);color:#fff}
+  .sync{font-size:.74rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:50%;background:#c2cbc6}
+  .sync.ok .dot{background:var(--free)}.sync.off .dot{background:var(--occupied)}.sync.wait .dot{background:#e0a93b}
+  .summary{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
+  .stat{flex:1;min-width:96px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+  .stat .n{font-family:var(--disp);font-size:1.6rem;font-weight:700;line-height:1}
+  .stat .l{font-size:.74rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+  .stat.free .n{color:var(--free)}.stat.occ .n{color:var(--occupied)}.stat.arr .n{color:var(--arrive)}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin:22px 0 12px;gap:12px}
+  .toolbar h2{font-family:var(--disp);font-size:1rem;font-weight:600;margin:0;color:var(--muted)}
+  .btn{font-family:var(--body);font-size:.85rem;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:999px;cursor:pointer;transition:transform .08s ease,background .15s ease}
+  .btn:hover{background:#f6f8f7}.btn:active{transform:scale(.97)}
+  .btn.ghost-danger{color:var(--occupied);border-color:#f1cfcb}.btn.ghost-danger:hover{background:#fdeeed}
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:520px){.grid{grid-template-columns:1fr 1fr}}
+  .room{position:relative;border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .face{appearance:none;border:0;width:100%;text-align:left;cursor:pointer;color:#fff;padding:16px 16px 14px;display:flex;flex-direction:column;gap:2px;transition:background .18s ease,transform .08s ease;font-family:inherit}
+  .face:active{transform:scale(.992)}
+  .face:focus-visible{outline:3px solid rgba(255,255,255,.7);outline-offset:-5px}
+  .face.free{background:var(--free)}.face.free:hover{background:var(--free-press)}
+  .face.occupied{background:var(--occupied)}.face.occupied:hover{background:var(--occupied-press)}
+  .face.arrive{background:var(--arrive)}.face.arrive:hover{background:var(--arrive-press)}
+  .rline{display:flex;align-items:baseline;gap:10px}
+  .rnum{font-family:var(--disp);font-size:2rem;font-weight:700;line-height:1}
+  .rname{font-size:.92rem;font-weight:600;opacity:.92}
+  .status{font-size:.74rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.92;margin-top:6px}
+  .next{font-size:.78rem;opacity:.9;margin-top:7px;font-weight:500}
+  .hint{font-size:.7rem;opacity:.72;margin-top:8px}
+  .pip{position:absolute;top:12px;right:12px;width:14px;height:14px;border-radius:50%;background:var(--arrive);border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+  .room.is-arrive .pip{background:#fff;border-color:var(--arrive)}
+  .room-actions{display:flex;border-top:1px solid var(--line)}
+  .mini{flex:1;appearance:none;border:0;background:var(--surface);color:var(--ink);font-family:inherit;font-size:.82rem;font-weight:600;padding:11px 8px;cursor:pointer;transition:background .12s ease}
+  .mini:hover{background:#f6f8f7}.mini:active{background:#eef1ef}.mini.book{color:var(--arrive)}
+  .upcoming{margin-top:30px}
+  .upcoming h2{font-family:var(--disp);font-size:1rem;font-weight:600;color:var(--muted);margin:0}
+  .ulist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .urow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 12px;box-shadow:var(--shadow)}
+  .udate{font-family:var(--disp);font-weight:700;font-size:.8rem;color:var(--arrive);background:#e9f0fd;border-radius:8px;padding:6px 9px;white-space:nowrap;min-width:62px;text-align:center}
+  .udate.today{color:#fff;background:var(--arrive)}
+  .uinfo{flex:1;min-width:0}.uinfo .r{font-weight:600;font-size:.9rem}.uinfo .g{font-size:.8rem;color:var(--muted)}
+  .urow .x{appearance:none;border:1px solid var(--line);background:#fff;color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1;flex:none}
+  .urow .x:hover{background:#fdeeed;color:var(--occupied);border-color:#f1cfcb}
+  .empty{color:var(--muted);font-size:.88rem;padding:14px 2px}
+  .scrim{position:fixed;inset:0;background:rgba(16,32,29,.42);display:none;align-items:flex-end;justify-content:center;z-index:50}
+  .scrim.open{display:flex}
+  @media(min-width:520px){.scrim.open{align-items:center;padding:20px}}
+  .sheet{background:var(--surface);width:100%;max-width:420px;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.18)}
+  @media(min-width:520px){.sheet{border-radius:20px}}
+  .sheet h3{font-family:var(--disp);margin:0 0 2px;font-size:1.15rem}
+  .sheet .sub{color:var(--muted);font-size:.85rem;margin:0 0 16px}
+  label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  input[type=date],input[type=text]{width:100%;font-family:inherit;font-size:1rem;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb;color:var(--ink);margin-bottom:16px}
+  input:focus{outline:none;border-color:var(--arrive);background:#fff}
+  .sheet-actions{display:flex;gap:10px}.sheet-actions .btn{flex:1;text-align:center;padding:13px}
+  .btn.primary{background:var(--arrive);color:#fff;border-color:var(--arrive)}.btn.primary:hover{background:var(--arrive-press)}
+  footer{margin-top:34px;text-align:center;color:var(--muted);font-size:.74rem}
+  .banner{background:#fdeeed;border:1px solid #f1cfcb;color:#8c2b22;border-radius:12px;padding:12px 14px;font-size:.85rem;margin-bottom:16px;display:none}
+  .banner.show{display:block}
+  .lock{position:fixed;inset:0;background:var(--mist);display:none;align-items:center;justify-content:center;padding:24px;z-index:100}
+  .lock.show{display:flex}
+  .lockcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:28px 24px;width:100%;max-width:340px;text-align:center}
+  .lockcard .ico{width:46px;height:46px;border-radius:50%;background:#e9f0fd;color:var(--arrive);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:1.4rem}
+  .lockcard h2{font-family:var(--disp);margin:0 0 4px;font-size:1.25rem}
+  .lockcard p.sub{color:var(--muted);font-size:.85rem;margin:0 0 18px}
+  .lockcard input{width:100%;text-align:center;letter-spacing:.3em;font-size:1.2rem;font-family:var(--disp);padding:13px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb;margin:0 0 12px}
+  .lockcard input:focus{outline:none;border-color:var(--arrive);background:#fff}
+  .lockcard .btn.primary{width:100%;padding:13px;background:var(--arrive);color:#fff;border-color:var(--arrive)}
+  .lockcard .btn.primary:hover{background:var(--arrive-press)}
+  .lockerr{color:var(--occupied);font-size:.82rem;font-weight:600;min-height:1.1em;margin:0 0 10px}
+  #toasts{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:120;pointer-events:none;padding:0 12px}
+  .toast{background:var(--ink);color:#fff;font-size:.86rem;font-weight:500;padding:11px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);max-width:420px;opacity:0;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease}
+  .toast.in{opacity:1;transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="lock show" id="lock">
+  <div class="lockcard">
+    <div class="ico">🔒</div>
+    <h2 id="lockTitle">Front Desk Access</h2>
+    <p class="sub" id="lockSub">Enter the staff passcode to open the room board.</p>
+    <input type="password" inputmode="numeric" id="pinInput" placeholder="••••" autocomplete="off" aria-label="Staff passcode">
+    <p class="lockerr" id="lockErr"></p>
+    <button class="btn primary" id="unlockBtn">Unlock</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="topline">
+      <div>
+        <p class="eyebrow" id="eyebrow">Resort Front Desk</p>
+        <h1 id="title">Room Board</h1>
+      </div>
+      <div class="rightcol">
+        <div class="langtog" id="langTog">
+          <button class="seg" data-lang="en">EN</button>
+          <button class="seg" data-lang="th">ไทย</button>
+        </div>
+        <div class="sync wait" id="sync"><span class="dot"></span><span id="syncText">Connecting…</span></div>
+      </div>
+    </div>
+    <div class="underline"></div>
+  </header>
+
+  <div class="banner" id="configBanner">
+    Add your Firebase keys in the <strong>FIREBASE CONFIG</strong> section of this file, then reload.
+  </div>
+
+  <section class="summary" id="summary"></section>
+
+  <div class="toolbar">
+    <h2 id="roomsHeading">Rooms</h2>
+    <button class="btn ghost-danger" id="clearAll">Clear all</button>
+  </div>
+
+  <section class="grid" id="grid"></section>
+
+  <section class="upcoming">
+    <h2 id="upcomingHeading">Upcoming bookings</h2>
+    <ul class="ulist" id="upcoming"></ul>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h3 id="sheetTitle">Book a room</h3>
+    <p class="sub" id="sheetSub"></p>
+    <label for="bdate" id="labelDate">Arrival date</label>
+    <input type="date" id="bdate">
+    <label for="bguest" id="labelGuest">Guest name (optional)</label>
+    <input type="text" id="bguest" autocomplete="off">
+    <div class="sheet-actions">
+      <button class="btn" id="bcancel">Cancel</button>
+      <button class="btn primary" id="bsave">Save booking</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  /* ============================================================
+     FIREBASE CONFIG  —  paste your own keys between the braces.
+     Firebase console -> Project settings -> "Your apps" -> Web app.
+     ============================================================ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyA5FRm_AuU7asLQ8oKRGdccVjnhRMEJpCw",
+    authDomain: "new-resort-board.firebaseapp.com",
+    projectId: "new-resort-board",
+    storageBucket: "new-resort-board.firebasestorage.app",
+    messagingSenderId: "1075468290275",
+    appId: "1:1075468290275:web:9519d7457fedf2de359dd6"
+  };
+  /* ---- STAFF PASSCODE — change to your own ---- */
+  const PIN = "2468";
+  /* ============================================================ */
+
+  const ROOM_COUNT = 7;
+  const configured = !String(firebaseConfig.apiKey).startsWith("PASTE_");
+  const LOCK_KEY="resort_unlocked", LANG_KEY="resort_lang", REM_KEY="resort_reminder_date";
+  let sessionUnlocked=false;
+  const ls = { get(k){ try{return localStorage.getItem(k);}catch(e){return null;} },
+               set(k,v){ try{localStorage.setItem(k,v);}catch(e){} } };
+  const isUnlocked = () => ls.get(LOCK_KEY)==="1" || sessionUnlocked;
+
+  /* ---------------- translations ---------------- */
+  const STR = {
+    en:{ eyebrow:"Resort Front Desk", title:"Room Board", roomWord:"Room",
+      free:"Free", occupied:"Occupied", arrive:"Arriving today",
+      roomsHeading:"Rooms", clearAll:"Clear all", upcomingHeading:"Upcoming bookings",
+      bookFuture:"+ Book future date", tapFree:"Tap to set Free", tapOcc:"Tap to set Occupied",
+      nextArrival:"Next arrival: ", todayWord:"Today", noGuest:"No guest name",
+      noBookings:"No bookings yet. Use \u201CBook future date\u201D on any room to add one.",
+      sheetTitle:"Book a room", labelDate:"Arrival date", labelGuest:"Guest name (optional)",
+      cancel:"Cancel", saveBooking:"Save booking", guestPlaceholder:"e.g. Dana",
+      footer:"Tap a room to switch Free / Occupied · Blue dot = future booking · Rooms turn blue on arrival day · Synced to every device",
+      syncOk:"Synced", syncConnecting:"Connecting…", syncSignin:"Signing in…", syncOffline:"Offline",
+      syncSaveFail:"Save failed — retry", syncNotConfigured:"Not configured", syncConfigError:"Config error", syncAuthFail:"Sign-in failed",
+      lockTitle:"Front Desk Access", lockSub:"Enter the staff passcode to open the room board.",
+      lockBtn:"Unlock", lockWrong:"Wrong passcode — try again.",
+      confirmClear:"Clear all rooms? This sets every room to Free and removes all bookings.",
+      alertDate:"Please choose an arrival date.", alertPast:"Pick today or a future date.",
+      notifStatus:"Room status changed", boardUpdated:"Board updated", notifReminder:"Arrivals tomorrow" },
+    th:{ eyebrow:"แผนกต้อนรับรีสอร์ท", title:"กระดานห้องพัก", roomWord:"ห้อง",
+      free:"ว่าง", occupied:"ไม่ว่าง", arrive:"เข้าพักวันนี้",
+      roomsHeading:"ห้องพัก", clearAll:"ล้างทั้งหมด", upcomingHeading:"การจองที่กำลังจะมาถึง",
+      bookFuture:"+ จองวันที่ล่วงหน้า", tapFree:"แตะเพื่อตั้งเป็นว่าง", tapOcc:"แตะเพื่อตั้งเป็นไม่ว่าง",
+      nextArrival:"เข้าพักครั้งถัดไป: ", todayWord:"วันนี้", noGuest:"ไม่ระบุชื่อผู้เข้าพัก",
+      noBookings:"ยังไม่มีการจอง แตะ \u201Cจองวันที่ล่วงหน้า\u201D ที่ห้องใดก็ได้เพื่อเพิ่ม",
+      sheetTitle:"จองห้องพัก", labelDate:"วันที่เข้าพัก", labelGuest:"ชื่อผู้เข้าพัก (ไม่บังคับ)",
+      cancel:"ยกเลิก", saveBooking:"บันทึกการจอง", guestPlaceholder:"เช่น สมหญิง",
+      footer:"แตะห้องเพื่อสลับ ว่าง / ไม่ว่าง · จุดสีน้ำเงิน = การจองล่วงหน้า · ห้องจะเป็นสีน้ำเงินในวันเข้าพัก · ซิงค์ทุกอุปกรณ์",
+      syncOk:"ซิงค์แล้ว", syncConnecting:"กำลังเชื่อมต่อ…", syncSignin:"กำลังเข้าสู่ระบบ…", syncOffline:"ออฟไลน์",
+      syncSaveFail:"บันทึกไม่สำเร็จ — ลองใหม่", syncNotConfigured:"ยังไม่ได้ตั้งค่า", syncConfigError:"ตั้งค่าผิดพลาด", syncAuthFail:"เข้าสู่ระบบไม่สำเร็จ",
+      lockTitle:"เข้าสู่แผนกต้อนรับ", lockSub:"ใส่รหัสผ่านพนักงานเพื่อเปิดกระดานห้องพัก",
+      lockBtn:"ปลดล็อก", lockWrong:"รหัสผ่านไม่ถูกต้อง — ลองอีกครั้ง",
+      confirmClear:"ล้างห้องทั้งหมด? ทุกห้องจะถูกตั้งเป็นว่างและลบการจองทั้งหมด",
+      alertDate:"กรุณาเลือกวันที่เข้าพัก", alertPast:"กรุณาเลือกวันนี้หรือวันในอนาคต",
+      notifStatus:"สถานะห้องเปลี่ยนแปลง", boardUpdated:"อัปเดตกระดานแล้ว", notifReminder:"ผู้เข้าพักพรุ่งนี้" }
+  };
+  let lang = (ls.get(LANG_KEY)==="th") ? "th" : "en";
+  const T = k => (STR[lang][k] !== undefined ? STR[lang][k] : k);
+
+  /* ---------------- date helpers (local) ---------------- */
+  const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const todayStr = () => iso(new Date());
+  const tomorrowStr = () => { const d=new Date(); d.setDate(d.getDate()+1); return iso(d); };
+  const fmt = ds => { const p=ds.split("-"); return new Date(+p[0],+p[1]-1,+p[2])
+    .toLocaleDateString(lang==="th"?"th-TH":"en-US",{month:"short",day:"numeric"}); };
+  const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+
+  const defaultState = () => { const rooms=[]; for(let i=1;i<=ROOM_COUNT;i++) rooms.push({id:i,status:"free",bookings:[]}); return {rooms}; };
+  let state = defaultState();
+  let db=null, ref=null, ready=false, firstSnap=true;
+  let prevView = {};
+  let syncCls="wait", syncKeyName="syncConnecting";
+
+  function setSync(cls,key){ syncCls=cls; syncKeyName=key;
+    const el=document.getElementById("sync"); el.className="sync "+cls;
+    document.getElementById("syncText").textContent=T(key); }
+
+  /* ---------------- sound ---------------- */
+  let actx=null, armed=false;
+  function ensureAudio(){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==="suspended") actx.resume(); }catch(e){} }
+  function beep(freq,start,dur,type,vol){ if(!actx) return; const o=actx.createOscillator(),g=actx.createGain();
+    o.type=type; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
+    const t=actx.currentTime+start; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.start(t); o.stop(t+dur+0.03); }
+  function playFree(){ ensureAudio(); beep(523.25,0,0.18,"sine",0.14); beep(783.99,0.12,0.24,"sine",0.14); }       // up, pleasant
+  function playOccupied(){ ensureAudio(); beep(440,0,0.2,"triangle",0.16); beep(311.13,0.15,0.3,"triangle",0.16); } // down, "busy"
+  function playSound(vs){ if(vs==="occupied") playOccupied(); else playFree(); }
+
+  /* ---------------- notifications ---------------- */
+  function requestNotif(){ try{ if("Notification" in window && Notification.permission==="default") Notification.requestPermission().catch(()=>{}); }catch(e){} }
+  function arm(){ if(armed) return; armed=true; ensureAudio(); requestNotif(); }
+  document.addEventListener("pointerdown", arm, {once:true});
+
+  function showToast(msg){ const wrap=document.getElementById("toasts"); const el=document.createElement("div");
+    el.className="toast"; el.textContent=msg; wrap.appendChild(el);
+    requestAnimationFrame(()=>el.classList.add("in"));
+    setTimeout(()=>{ el.classList.remove("in"); setTimeout(()=>el.remove(),320); }, 5200); }
+  function notify(title, body, tag){ showToast(body?(title+" — "+body):title);
+    try{ if("Notification" in window && Notification.permission==="granted")
+      new Notification(title,{body:body||"",tag:tag||"room"}); }catch(e){} }
+
+  /* ---------------- view logic ---------------- */
+  const viewStatus = r => r.status==="occupied" ? "occupied"
+    : (r.bookings||[]).some(b=>b.date===todayStr()) ? "arrive" : "free";
+  const hasFuturePip = r => (r.bookings||[]).some(b=>b.date>todayStr());
+  const nextBooking = r => (r.bookings||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))[0]||null;
+
+  function purgePast(){ const t=todayStr(); let ch=false;
+    state.rooms.forEach(r=>{ const n=(r.bookings||[]).length; r.bookings=(r.bookings||[]).filter(b=>b.date>=t);
+      if(r.bookings.length!==n) ch=true; }); return ch; }
+
+  async function persist(){ render();
+    if(!ready||!ref) return;
+    try{ await setDoc(ref,{rooms:state.rooms,updatedAt:Date.now()}); setSync("ok","syncOk"); }
+    catch(e){ console.error(e); setSync("off","syncSaveFail"); } }
+
+  /* ---------------- render ---------------- */
+  function applyStaticText(){
+    document.documentElement.lang = lang;
+    const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
+    set("eyebrow",T("eyebrow")); set("title",T("title")); set("roomsHeading",T("roomsHeading"));
+    set("clearAll",T("clearAll")); set("upcomingHeading",T("upcomingHeading")); set("footer",T("footer"));
+    set("lockTitle",T("lockTitle")); set("lockSub",T("lockSub")); set("unlockBtn",T("lockBtn"));
+    set("sheetTitle",T("sheetTitle")); set("labelDate",T("labelDate")); set("labelGuest",T("labelGuest"));
+    set("bcancel",T("cancel")); set("bsave",T("saveBooking"));
+    const bg=document.getElementById("bguest"); if(bg) bg.placeholder=T("guestPlaceholder");
+    document.querySelectorAll("#langTog .seg").forEach(b=>b.classList.toggle("active", b.dataset.lang===lang));
+    setSync(syncCls,syncKeyName);
+  }
+
+  function render(){
+    const grid=document.getElementById("grid"); grid.innerHTML="";
+    let free=0,occ=0,arr=0;
+    state.rooms.forEach(r=>{
+      const vs=viewStatus(r);
+      if(vs==="free")free++; else if(vs==="occupied")occ++; else arr++;
+      const label=T(vs);
+      const nb=nextBooking(r); let nextHtml="";
+      if(nb){ const who=nb.guest?(" · "+esc(nb.guest)):""; const tag=nb.date===todayStr()?T("todayWord"):fmt(nb.date);
+        nextHtml='<div class="next">'+T("nextArrival")+tag+who+'</div>'; }
+      const pip=hasFuturePip(r)?'<span class="pip"></span>':'';
+      const hint=vs==="occupied"?T("tapFree"):T("tapOcc");
+      const card=document.createElement("div");
+      card.className="room"+(vs==="arrive"?" is-arrive":"");
+      card.innerHTML=
+        '<button class="face '+vs+'" data-toggle="'+r.id+'" aria-label="'+T("roomWord")+' '+r.id+', '+label+'">'
+        +'<div class="rline"><span class="rnum">'+r.id+'</span><span class="rname">'+T("roomWord")+' '+r.id+'</span></div>'
+        +'<div class="status">'+label+'</div>'+nextHtml
+        +'<div class="hint">'+hint+'</div></button>'+pip
+        +'<div class="room-actions"><button class="mini book" data-book="'+r.id+'">'+T("bookFuture")+'</button></div>';
+      grid.appendChild(card);
+    });
+    document.getElementById("summary").innerHTML=
+      '<div class="stat free"><div class="n">'+free+'</div><div class="l">'+T("free")+'</div></div>'
+      +'<div class="stat occ"><div class="n">'+occ+'</div><div class="l">'+T("occupied")+'</div></div>'
+      +'<div class="stat arr"><div class="n">'+arr+'</div><div class="l">'+T("arrive")+'</div></div>';
+    renderUpcoming();
+  }
+  function renderUpcoming(){
+    const ul=document.getElementById("upcoming"); const t=todayStr(); const items=[];
+    state.rooms.forEach(r=>(r.bookings||[]).forEach(b=>items.push({room:r.id,...b})));
+    items.sort((a,b)=>a.date.localeCompare(b.date)||a.room-b.room);
+    ul.innerHTML="";
+    if(!items.length){ ul.innerHTML='<li class="empty">'+T("noBookings")+'</li>'; return; }
+    items.forEach(it=>{ const li=document.createElement("li"); li.className="urow"; const today=it.date===t;
+      li.innerHTML='<span class="udate '+(today?"today":"")+'">'+(today?T("todayWord"):fmt(it.date))+'</span>'
+        +'<div class="uinfo"><div class="r">'+T("roomWord")+' '+it.room+'</div><div class="g">'+(it.guest?esc(it.guest):T("noGuest"))+'</div></div>'
+        +'<button class="x" data-del="'+it.room+':'+it.id+'" aria-label="remove">×</button>';
+      ul.appendChild(li); });
+  }
+
+  /* ---------------- local actions (instant sound for this device) ---------------- */
+  function localSound(r){ const vs=viewStatus(r); if(prevView[r.id]!==vs){ playSound(vs); prevView[r.id]=vs; } }
+
+  document.addEventListener("click", e=>{
+    const t=e.target.closest("[data-toggle],[data-book],[data-del]"); if(!t) return;
+    if(t.dataset.toggle){ const r=state.rooms.find(x=>x.id===+t.dataset.toggle);
+      r.status=r.status==="occupied"?"free":"occupied"; localSound(r); persist(); }
+    else if(t.dataset.book){ openSheet(+t.dataset.book); }
+    else if(t.dataset.del){ const [rid,bid]=t.dataset.del.split(":"); const r=state.rooms.find(x=>x.id===+rid);
+      r.bookings=(r.bookings||[]).filter(b=>b.id!==bid); localSound(r); persist(); }
+  });
+  document.getElementById("clearAll").addEventListener("click",()=>{
+    if(!confirm(T("confirmClear"))) return;
+    state=defaultState(); state.rooms.forEach(r=>prevView[r.id]="free"); persist();
+  });
+
+  /* ---------------- booking sheet ---------------- */
+  let bookingRoom=null; const scrim=document.getElementById("scrim");
+  function openSheet(id){ bookingRoom=id; document.getElementById("sheetSub").textContent=T("roomWord")+" "+id;
+    const d=document.getElementById("bdate"); d.min=todayStr(); d.value=todayStr();
+    document.getElementById("bguest").value=""; scrim.classList.add("open"); setTimeout(()=>d.focus(),50); }
+  function closeSheet(){ scrim.classList.remove("open"); bookingRoom=null; }
+  document.getElementById("bcancel").addEventListener("click",closeSheet);
+  scrim.addEventListener("click",e=>{ if(e.target===scrim)closeSheet(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&scrim.classList.contains("open"))closeSheet(); });
+  document.getElementById("bsave").addEventListener("click",()=>{
+    const date=document.getElementById("bdate").value;
+    if(!date){alert(T("alertDate"));return;}
+    if(date<todayStr()){alert(T("alertPast"));return;}
+    const guest=document.getElementById("bguest").value.trim();
+    const r=state.rooms.find(x=>x.id===bookingRoom);
+    (r.bookings=r.bookings||[]).push({id:"b"+Date.now()+Math.random().toString(36).slice(2,6),date,guest});
+    closeSheet(); localSound(r); persist();
+  });
+
+  /* ---------------- language toggle ---------------- */
+  document.getElementById("langTog").addEventListener("click",e=>{
+    const b=e.target.closest(".seg"); if(!b) return;
+    lang=b.dataset.lang; ls.set(LANG_KEY,lang); applyStaticText(); render();
+  });
+
+  /* ---------------- PIN gate ---------------- */
+  const lockEl=document.getElementById("lock");
+  function tryUnlock(){ const v=document.getElementById("pinInput").value.trim();
+    if(v===PIN){ sessionUnlocked=true; ls.set(LOCK_KEY,"1"); arm(); lockEl.classList.remove("show"); }
+    else{ document.getElementById("lockErr").textContent=T("lockWrong");
+      document.getElementById("pinInput").value=""; document.getElementById("pinInput").focus(); } }
+  document.getElementById("unlockBtn").addEventListener("click",tryUnlock);
+  document.getElementById("pinInput").addEventListener("keydown",e=>{ if(e.key==="Enter")tryUnlock(); });
+  if(isUnlocked()) lockEl.classList.remove("show"); else setTimeout(()=>document.getElementById("pinInput").focus(),60);
+
+  /* ---------------- 8 PM reminder + midnight roll ---------------- */
+  let reminderDate = ls.get(REM_KEY);
+  function reminderCheck(){
+    const now=new Date(); const t=todayStr();
+    if(now.getHours()>=20 && reminderDate!==t){
+      reminderDate=t; ls.set(REM_KEY,t);
+      const tm=tomorrowStr(); const arr=[];
+      state.rooms.forEach(r=>(r.bookings||[]).forEach(b=>{ if(b.date===tm) arr.push(T("roomWord")+" "+r.id+(b.guest?(" ("+b.guest+")"):"")); }));
+      if(arr.length){ arm(); playFree(); notify(T("notifReminder"), arr.join(", "), "reminder"); }
+    }
+  }
+  let lastDay=todayStr();
+  setInterval(()=>{
+    const t=todayStr();
+    if(t!==lastDay){ lastDay=t; const ch=purgePast();
+      state.rooms.forEach(r=>prevView[r.id]=viewStatus(r)); // silent recompute at midnight
+      if(ready&&ch) persist(); else render(); }
+    reminderCheck();
+  },30000);
+  setTimeout(reminderCheck,5000);
+
+  /* ---------------- start ---------------- */
+  applyStaticText(); render();
+
+  function startFirestore(){
+    ref=doc(db,"board","main");
+    onSnapshot(ref, snap=>{
+      const pending = snap.metadata && snap.metadata.hasPendingWrites;
+      if(snap.exists()){
+        const data=snap.data();
+        if(data && Array.isArray(data.rooms) && data.rooms.length===ROOM_COUNT){
+          state={rooms:data.rooms};
+          const allow = !firstSnap && !pending;
+          const changed=[];
+          state.rooms.forEach(r=>{ const vs=viewStatus(r); const prev=prevView[r.id];
+            if(allow && prev!==undefined && prev!==vs) changed.push({id:r.id,vs}); prevView[r.id]=vs; });
+          if(changed.length>2){ playFree(); showToast(T("boardUpdated")); }
+          else changed.forEach(c=>{ playSound(c.vs); notify(T("notifStatus"), T("roomWord")+" "+c.id+" → "+T(c.vs), "room"+c.id); });
+          firstSnap=false; ready=true;
+          if(purgePast()) persist(); else { render(); setSync("ok","syncOk"); }
+          return;
+        }
+      }
+      ready=true; state=defaultState(); persist(); // seed fresh database
+    }, err=>{ console.error(err); setSync("off","syncOffline"); render(); });
+  }
+
+  if(!configured){
+    document.getElementById("configBanner").classList.add("show");
+    setSync("off","syncNotConfigured");
+  } else {
+    try{
+      const app=initializeApp(firebaseConfig);
+      db=getFirestore(app);
+      const auth=getAuth(app);
+      setSync("wait","syncSignin");
+      onAuthStateChanged(auth, user=>{ if(user) startFirestore(); });
+      signInAnonymously(auth).catch(e=>{ console.error(e); setSync("off","syncAuthFail"); });
+    }catch(e){ console.error(e); setSync("off","syncConfigError"); }
+  }
+</script>
+</body>
+</html>
