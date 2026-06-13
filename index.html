@@ -45,8 +45,11 @@
   .grid{display:grid;grid-template-columns:1fr;gap:12px}
   @media(min-width:520px){.grid{grid-template-columns:1fr 1fr}}
   .room{position:relative;border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column}
-  .face{appearance:none;border:0;width:100%;text-align:left;cursor:pointer;color:#fff;padding:16px 16px 14px;display:flex;flex-direction:column;gap:2px;transition:background .18s ease,transform .08s ease;font-family:inherit}
+  .face{appearance:none;border:0;width:100%;text-align:left;cursor:pointer;color:#fff;padding:16px 16px 14px;display:flex;flex-direction:column;gap:2px;transition:background .18s ease,transform .08s ease;font-family:inherit;position:relative;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
   .face:active{transform:scale(.992)}
+  .face::after{content:"";position:absolute;top:0;bottom:0;left:0;width:var(--hold,0%);background:rgba(255,255,255,.30);z-index:0;pointer-events:none}
+  .face.holding{transition:none}
+  .face .rline,.face .status,.face .next,.face .hint{position:relative;z-index:1}
   .face:focus-visible{outline:3px solid rgba(255,255,255,.7);outline-offset:-5px}
   .face.free{background:var(--free)}.face.free:hover{background:var(--free-press)}
   .face.occupied{background:var(--occupied)}.face.occupied:hover{background:var(--occupied-press)}
@@ -208,12 +211,12 @@
     en:{ eyebrow:"Resort Front Desk", title:"Room Board", roomWord:"Room",
       free:"Free", occupied:"Occupied", arrive:"Arriving today",
       roomsHeading:"Rooms", clearAll:"Clear all", upcomingHeading:"Upcoming bookings",
-      bookFuture:"+ Book future date", tapFree:"Tap to set Free", tapOcc:"Tap to set Occupied",
+      bookFuture:"+ Book future date", tapFree:"Hold to set Free", tapOcc:"Hold to set Occupied",
       nextArrival:"Next arrival: ", todayWord:"Today", noGuest:"No guest name",
       noBookings:"No bookings yet. Use \u201CBook future date\u201D on any room to add one.",
       sheetTitle:"Book a room", labelDate:"Arrival date", labelGuest:"Guest name (optional)",
       cancel:"Cancel", saveBooking:"Save booking", guestPlaceholder:"e.g. Dana",
-      footer:"Tap a room to switch Free / Occupied · Blue dot = future booking · Rooms turn blue on arrival day · Synced to every device",
+      footer:"Hold a room to switch Free / Occupied · Blue dot = future booking · Rooms turn blue on arrival day · Synced to every device",
       syncOk:"Synced", syncConnecting:"Connecting…", syncSignin:"Signing in…", syncOffline:"Offline",
       syncSaveFail:"Save failed — retry", syncNotConfigured:"Not configured", syncConfigError:"Config error", syncAuthFail:"Sign-in failed",
       lockTitle:"Front Desk Access", lockSub:"Enter the staff passcode to open the room board.",
@@ -224,12 +227,12 @@
     th:{ eyebrow:"แผนกต้อนรับรีสอร์ท", title:"กระดานห้องพัก", roomWord:"ห้อง",
       free:"ว่าง", occupied:"ไม่ว่าง", arrive:"เข้าพักวันนี้",
       roomsHeading:"ห้องพัก", clearAll:"ล้างทั้งหมด", upcomingHeading:"การจองที่กำลังจะมาถึง",
-      bookFuture:"+ จองวันที่ล่วงหน้า", tapFree:"แตะเพื่อตั้งเป็นว่าง", tapOcc:"แตะเพื่อตั้งเป็นไม่ว่าง",
+      bookFuture:"+ จองวันที่ล่วงหน้า", tapFree:"กดค้างเพื่อตั้งเป็นว่าง", tapOcc:"กดค้างเพื่อตั้งเป็นไม่ว่าง",
       nextArrival:"เข้าพักครั้งถัดไป: ", todayWord:"วันนี้", noGuest:"ไม่ระบุชื่อผู้เข้าพัก",
       noBookings:"ยังไม่มีการจอง แตะ \u201Cจองวันที่ล่วงหน้า\u201D ที่ห้องใดก็ได้เพื่อเพิ่ม",
       sheetTitle:"จองห้องพัก", labelDate:"วันที่เข้าพัก", labelGuest:"ชื่อผู้เข้าพัก (ไม่บังคับ)",
       cancel:"ยกเลิก", saveBooking:"บันทึกการจอง", guestPlaceholder:"เช่น สมหญิง",
-      footer:"แตะห้องเพื่อสลับ ว่าง / ไม่ว่าง · จุดสีน้ำเงิน = การจองล่วงหน้า · ห้องจะเป็นสีน้ำเงินในวันเข้าพัก · ซิงค์ทุกอุปกรณ์",
+      footer:"กดห้องค้างไว้เพื่อสลับ ว่าง / ไม่ว่าง · จุดสีน้ำเงิน = การจองล่วงหน้า · ห้องจะเป็นสีน้ำเงินในวันเข้าพัก · ซิงค์ทุกอุปกรณ์",
       syncOk:"ซิงค์แล้ว", syncConnecting:"กำลังเชื่อมต่อ…", syncSignin:"กำลังเข้าสู่ระบบ…", syncOffline:"ออฟไลน์",
       syncSaveFail:"บันทึกไม่สำเร็จ — ลองใหม่", syncNotConfigured:"ยังไม่ได้ตั้งค่า", syncConfigError:"ตั้งค่าผิดพลาด", syncAuthFail:"เข้าสู่ระบบไม่สำเร็จ",
       lockTitle:"เข้าสู่แผนกต้อนรับ", lockSub:"ใส่รหัสผ่านพนักงานเพื่อเปิดกระดานห้องพัก",
@@ -358,13 +361,30 @@
   function localSound(r){ const vs=viewStatus(r); if(prevView[r.id]!==vs){ playSound(vs); prevView[r.id]=vs; } }
 
   document.addEventListener("click", e=>{
-    const t=e.target.closest("[data-toggle],[data-book],[data-del]"); if(!t) return;
-    if(t.dataset.toggle){ const r=state.rooms.find(x=>x.id===+t.dataset.toggle);
-      r.status=r.status==="occupied"?"free":"occupied"; localSound(r); persist(); }
-    else if(t.dataset.book){ openSheet(+t.dataset.book); }
+    const t=e.target.closest("[data-book],[data-del]"); if(!t) return;
+    if(t.dataset.book){ openSheet(+t.dataset.book); }
     else if(t.dataset.del){ const [rid,bid]=t.dataset.del.split(":"); const r=state.rooms.find(x=>x.id===+rid);
       r.bookings=(r.bookings||[]).filter(b=>b.id!==bid); localSound(r); persist(); }
   });
+
+  /* hold a tile to change its status (prevents accidental taps) */
+  function toggleRoom(id){ const r=state.rooms.find(x=>x.id===id); if(!r) return;
+    r.status=r.status==="occupied"?"free":"occupied"; localSound(r); persist(); }
+  const HOLD_MS=550; let holdFace=null,holdTimer=null,holdRAF=null;
+  function cancelHold(){ if(holdTimer){clearTimeout(holdTimer);holdTimer=null;} if(holdRAF){cancelAnimationFrame(holdRAF);holdRAF=null;}
+    if(holdFace){ holdFace.classList.remove("holding"); holdFace.style.setProperty("--hold","0%"); holdFace=null; } }
+  function startHold(face){ cancelHold(); holdFace=face; face.classList.add("holding"); const t0=performance.now();
+    (function step(now){ const p=Math.min(1,(now-t0)/HOLD_MS); face.style.setProperty("--hold",(p*100)+"%");
+      if(p<1) holdRAF=requestAnimationFrame(step); })(t0);
+    holdTimer=setTimeout(()=>{ const id=+face.dataset.toggle; cancelHold(); try{navigator.vibrate&&navigator.vibrate(30);}catch(e){} toggleRoom(id); }, HOLD_MS); }
+  const gridEl=document.getElementById("grid");
+  gridEl.addEventListener("pointerdown", e=>{ const f=e.target.closest(".face"); if(f) startHold(f); });
+  gridEl.addEventListener("pointerup", cancelHold);
+  gridEl.addEventListener("pointercancel", cancelHold);
+  gridEl.addEventListener("pointerleave", cancelHold);
+  gridEl.addEventListener("pointermove", e=>{ if(holdFace && e.target.closest(".face")!==holdFace) cancelHold(); });
+  gridEl.addEventListener("keydown", e=>{ const f=e.target.closest(".face"); if(!f) return;
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleRoom(+f.dataset.toggle); } });
   document.getElementById("clearAll").addEventListener("click",()=>{
     if(!confirm(T("confirmClear"))) return;
     state=defaultState(); state.rooms.forEach(r=>prevView[r.id]="free"); persist();
