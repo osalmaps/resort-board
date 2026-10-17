@@ -18,6 +18,7 @@
     --body:'Inter','Noto Sans Thai',system-ui,-apple-system,sans-serif;
   }
   *{box-sizing:border-box}html,body{margin:0;padding:0}
+  [hidden]{display:none!important}
   body{font-family:var(--body);background:var(--mist);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
   .wrap{max-width:760px;margin:0 auto;padding:22px 16px 60px}
   header{margin-bottom:18px}
@@ -167,6 +168,10 @@
   .catbar{height:8px;background:#f1f3f2;border-radius:6px;overflow:hidden}
   .catbar span{display:block;height:100%;background:var(--occupied);border-radius:6px}
   .edate{font-family:var(--disp);font-weight:700;font-size:.78rem;color:var(--muted);background:#f1f3f2;border-radius:8px;padding:6px 8px;white-space:nowrap;min-width:54px;text-align:center}
+  .acclock{display:flex;justify-content:center;padding:26px 0}
+  .acclock .lockcard input{width:100%;text-align:center;letter-spacing:.2em;font-size:1.2rem;font-family:var(--disp);padding:13px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb;margin:0 0 12px}
+  .acclock .lockcard .btn.primary:disabled{opacity:.6}
+  .lockrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px;font-size:.8rem;color:var(--muted)}
   .eamt{font-family:var(--disp);font-weight:700;white-space:nowrap}
   #toasts{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:120;pointer-events:none;padding:0 12px}
   .toast{background:var(--ink);color:#fff;font-size:.86rem;font-weight:500;padding:11px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);max-width:420px;opacity:0;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease}
@@ -243,6 +248,17 @@
 
   <!-- ================= ACCOUNTS PAGE ================= -->
   <div id="pageAccounts" hidden>
+    <div class="acclock" id="accLock">
+      <div class="lockcard">
+        <div class="ico">🔐</div>
+        <h2 id="accLockTitle">Accounts</h2>
+        <p class="sub" id="accLockSub">Enter the accounts code. This device will remember it.</p>
+        <input type="password" id="accCode" placeholder="••••••" autocomplete="current-password" aria-label="Accounts code">
+        <p class="lockerr" id="accLockErr"></p>
+        <button class="btn primary" id="accUnlock">Unlock</button>
+      </div>
+    </div>
+    <div id="accContent" hidden>
     <div class="monthnav">
       <button class="btn mnav" id="mPrev" aria-label="Previous month">‹</button>
       <span class="mtitle" id="accMonth"></span>
@@ -283,6 +299,10 @@
         <button class="btn" id="copySalaries" hidden>Copy salaries from last month</button></div>
       <ul class="ulist" id="expList"></ul>
     </section>
+
+    <div class="lockrow"><span id="accDeviceNote">Accounts are unlocked on this device.</span>
+      <button class="btn ghost-danger" id="accLockBtn">Lock this device</button></div>
+    </div>
   </div>
 </div>
 
@@ -307,7 +327,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, doc, onSnapshot, setDoc, updateDoc, deleteField }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged }
+  import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   /* ============================================================
@@ -324,6 +344,9 @@
   };
   /* ---- STAFF PASSCODE — change to your own ---- */
   const PIN = "2468";
+  /* ---- ACCOUNTS LOGIN — the Firebase user that may open the Accounts page.
+     Create this user in Firebase -> Authentication -> Users with your accounts code as password. ---- */
+  const OWNER_EMAIL = "owner@resortboard.local";
   /* ============================================================ */
 
   const ROOM_COUNT = 7;
@@ -373,7 +396,13 @@
       expAdded:"Expense added", saveFail:"Save failed — check connection",
       cat_electric:"Electricity", cat_water:"Water", cat_internet:"Internet & phone", cat_coffee:"Coffee & drinks",
       cat_soap:"Soap & toiletries", cat_laundry:"Washing machine soap", cat_cleaning:"Cleaning supplies",
-      cat_repairs:"Repairs & maintenance", cat_salary:"Salary", cat_other:"Other" },
+      cat_repairs:"Repairs & maintenance", cat_salary:"Salary", cat_other:"Other",
+      accLockTitle:"Accounts", accLockSub:"Enter the accounts code. This device will remember it until you lock it.",
+      accUnlock:"Unlock", accChecking:"Checking…", accWrong:"Wrong code — try again.",
+      accTooMany:"Too many tries. Wait a few minutes and try again.", accOffline:"No connection — try again when online.",
+      accNotSetup:"Accounts login is not set up in Firebase yet (Email/Password sign-in and the owner user).",
+      accDeviceNote:"Accounts are unlocked on this device.", accLockBtn:"Lock this device",
+      confirmLock:"Lock Accounts on this device? You will need the code to open it again.", accLocked:"Accounts locked on this device" },
     th:{ eyebrow:"แผนกต้อนรับรีสอร์ท", title:"กระดานห้องพัก", roomWord:"ห้อง",
       free:"ว่าง", occupied:"ไม่ว่าง", arrive:"เข้าพักวันนี้",
       roomsHeading:"ห้องพัก", clearAll:"ล้างทั้งหมด", upcomingHeading:"การจองที่กำลังจะมาถึง",
@@ -411,7 +440,13 @@
       expAdded:"เพิ่มรายจ่ายแล้ว", saveFail:"บันทึกไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ",
       cat_electric:"ค่าไฟฟ้า", cat_water:"ค่าน้ำ", cat_internet:"อินเทอร์เน็ตและโทรศัพท์", cat_coffee:"กาแฟและเครื่องดื่ม",
       cat_soap:"สบู่และของใช้ในห้องน้ำ", cat_laundry:"ผงซักฟอก / น้ำยาซักผ้า", cat_cleaning:"อุปกรณ์ทำความสะอาด",
-      cat_repairs:"ซ่อมแซมและบำรุงรักษา", cat_salary:"เงินเดือน", cat_other:"อื่นๆ" }
+      cat_repairs:"ซ่อมแซมและบำรุงรักษา", cat_salary:"เงินเดือน", cat_other:"อื่นๆ",
+      accLockTitle:"บัญชี", accLockSub:"ใส่รหัสบัญชี อุปกรณ์นี้จะจำไว้จนกว่าจะล็อก",
+      accUnlock:"ปลดล็อก", accChecking:"กำลังตรวจสอบ…", accWrong:"รหัสไม่ถูกต้อง — ลองอีกครั้ง",
+      accTooMany:"ลองหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่", accOffline:"ไม่มีการเชื่อมต่อ — ลองใหม่เมื่อออนไลน์",
+      accNotSetup:"ยังไม่ได้ตั้งค่าการเข้าสู่ระบบบัญชีใน Firebase",
+      accDeviceNote:"บัญชีปลดล็อกอยู่บนอุปกรณ์นี้", accLockBtn:"ล็อกอุปกรณ์นี้",
+      confirmLock:"ล็อกบัญชีบนอุปกรณ์นี้? ต้องใช้รหัสเพื่อเปิดอีกครั้ง", accLocked:"ล็อกบัญชีบนอุปกรณ์นี้แล้ว" }
   };
   let lang = (ls.get(LANG_KEY)==="th") ? "th" : "en";
   const T = k => (STR[lang][k] !== undefined ? STR[lang][k] : k);
@@ -440,8 +475,10 @@
   let statsRef=null, stays={}, statsReady=false, selMonth=null;
   /* accounts: board/accounts = { settings:{price}, expenses:{ id:{date,cat,note,amount,createdAt} } } */
   const DEFAULT_PRICE = 400;
-  let accRef=null, accData={settings:{},expenses:{}}, accReady=false;
-  const nightPrice = () => { const p=+((accData.settings||{}).price); return p>0 ? p : DEFAULT_PRICE; };
+  let accRef=null, accData={settings:{},expenses:{}}, accReady=false, accUnsub=null;
+  let auth=null, isOwner=false, fsStarted=false, statsSettings={};
+  const nightPrice = () => { const a=+(statsSettings.price), b=+((accData.settings||{}).price);
+    return a>0 ? a : b>0 ? b : DEFAULT_PRICE; };
   const monthKey = ts => { const d=new Date(ts); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); };
   const newStayId = () => "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const inGrace = r => r.status==="occupied" && r.occSince && (Date.now()-r.occSince) < GRACE_MS;
@@ -738,7 +775,9 @@
   function accText(){
     const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
     ["tabBoard","tabAccounts","addExpHeading","lblExDate","lblExCat","lblExNote","lblExAmount","exAdd",
-     "incomeHeading","lblPrice","priceSave","byCatHeading","expListHeading","copySalaries","incomeNote"].forEach(k=>set(k,T(k)));
+     "incomeHeading","lblPrice","priceSave","byCatHeading","expListHeading","copySalaries","incomeNote",
+     "accLockTitle","accLockSub","accDeviceNote","accLockBtn"].forEach(k=>set(k,T(k)));
+    const ub=document.getElementById("accUnlock"); if(!ub.disabled) ub.textContent=T("accUnlock");
     document.getElementById("exNote").placeholder=T("notePlaceholder");
     document.getElementById("exErr").textContent="";
     const sel=document.getElementById("exCat"); const cur=sel.value||"electric";
@@ -748,6 +787,9 @@
   function renderAccounts(){
     if(page!=="accounts") return;
     accText();
+    document.getElementById("accLock").hidden = isOwner;
+    document.getElementById("accContent").hidden = !isOwner;
+    if(!isOwner) return;
     document.getElementById("accMonth").textContent=monthLabel(accMonth);
     document.getElementById("mNext").disabled = accMonth>=curMonth();
     const inc=monthIncome(accMonth), exps=monthExpenses(accMonth);
@@ -828,8 +870,8 @@
   document.getElementById("priceSave").addEventListener("click",()=>{
     const p=parseAmount(document.getElementById("priceInput").value);
     if(!(p>0)){ showToast(T("errPrice")); return; }
-    accData.settings=Object.assign({},accData.settings,{price:p});
-    saveAcc({settings:{price:p}}); document.getElementById("priceInput").blur(); showToast(T("priceSaved")); renderAccounts();
+    statsSettings=Object.assign({},statsSettings,{price:p});
+    if(statsRef) setDoc(statsRef,{settings:{price:p}},{merge:true}).catch(e=>{ console.error(e); showToast(T("saveFail")); }); document.getElementById("priceInput").blur(); showToast(T("priceSaved")); renderAccounts();
   });
 
   document.getElementById("copySalaries").addEventListener("click",()=>{
@@ -914,19 +956,49 @@
     onSnapshot(statsRef, snap=>{
       const data = snap.exists() ? snap.data() : null;
       stays = (data && data.stays && typeof data.stays==="object") ? data.stays : {};
+      statsSettings = (data && data.settings && typeof data.settings==="object") ? data.settings : {};
       statsReady=true;
       if(reconcile()) persist(); else renderStats();
     }, err=>{ console.error("stats:",err); });
 
-    // accounts document: expenses + price per night
     accRef=doc(db,"board","accounts");
-    onSnapshot(accRef, snap=>{
+  }
+
+  /* accounts document: only the owner login may read it (enforced by Firestore rules) */
+  function startAcc(){
+    if(accUnsub || !accRef) return;
+    accUnsub = onSnapshot(accRef, snap=>{
       const d = snap.exists() ? snap.data() : {};
       accData = { settings:(d.settings&&typeof d.settings==="object")?d.settings:{},
                   expenses:(d.expenses&&typeof d.expenses==="object")?d.expenses:{} };
       accReady=true; renderAccounts();
-    }, err=>{ console.error("accounts:",err); });
+    }, err=>{ console.error("accounts:",err); accUnsub=null; });
   }
+  function stopAcc(){ if(accUnsub){ try{accUnsub();}catch(e){} accUnsub=null; }
+    accData={settings:{},expenses:{}}; accReady=false; }
+
+  async function accUnlock(){
+    const inp=document.getElementById("accCode"), err=document.getElementById("accLockErr"), btn=document.getElementById("accUnlock");
+    const code=inp.value; err.textContent=""; if(!code) { inp.focus(); return; }
+    if(!auth){ err.textContent=T("accNotSetup"); return; }
+    btn.disabled=true; btn.textContent=T("accChecking");
+    try{ await signInWithEmailAndPassword(auth, OWNER_EMAIL, code); inp.value=""; }
+    catch(e){ console.error(e); const c=(e&&e.code)||"";
+      err.textContent = c.includes("too-many-requests") ? T("accTooMany")
+        : c.includes("network") ? T("accOffline")
+        : (c.includes("operation-not-allowed")||c.includes("configuration-not-found")) ? T("accNotSetup")
+        : T("accWrong");
+      inp.value=""; inp.focus(); }
+    btn.disabled=false; btn.textContent=T("accUnlock");
+  }
+  document.getElementById("accUnlock").addEventListener("click",accUnlock);
+  document.getElementById("accCode").addEventListener("keydown",e=>{ if(e.key==="Enter") accUnlock(); });
+  document.getElementById("accLockBtn").addEventListener("click",async ()=>{
+    if(!confirm(T("confirmLock"))) return;
+    stopAcc(); isOwner=false; renderAccounts();
+    try{ await signOut(auth); }catch(e){ console.error(e); }   // board signs back in anonymously
+    showToast(T("accLocked"));
+  });
 
   if(!configured){
     document.getElementById("configBanner").classList.add("show");
@@ -935,10 +1007,16 @@
     try{
       const app=initializeApp(firebaseConfig);
       db=getFirestore(app);
-      const auth=getAuth(app);
+      auth=getAuth(app);
       setSync("wait","syncSignin");
-      onAuthStateChanged(auth, user=>{ if(user) startFirestore(); });
-      signInAnonymously(auth).catch(e=>{ console.error(e); setSync("off","syncAuthFail"); });
+      onAuthStateChanged(auth, user=>{
+        if(!user){ isOwner=false; stopAcc(); renderAccounts();
+          signInAnonymously(auth).catch(e=>{ console.error(e); setSync("off","syncAuthFail"); }); return; }
+        isOwner = !user.isAnonymous && (user.email||"").toLowerCase()===OWNER_EMAIL;
+        if(!fsStarted){ fsStarted=true; startFirestore(); }
+        if(isOwner) startAcc(); else stopAcc();
+        renderAccounts();
+      });
     }catch(e){ console.error(e); setSync("off","syncConfigError"); }
   }
 </script>
