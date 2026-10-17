@@ -127,6 +127,47 @@
   .pending{margin-top:14px;background:#fff7e8;border:1px solid #f2deb3;color:#7a5512;border-radius:12px;padding:10px 12px;font-size:.82rem}
   .pending b{font-weight:700}
   .snote{margin-top:12px;font-size:.76rem;color:var(--muted)}
+  /* ---- page tabs + accounts ---- */
+  .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;margin:4px 0 6px;box-shadow:var(--shadow)}
+  .tab{flex:1;appearance:none;border:0;background:transparent;font-family:var(--body);font-size:.9rem;font-weight:600;color:var(--muted);padding:10px 12px;border-radius:999px;cursor:pointer}
+  .tab.active{background:var(--ink);color:#fff}
+  .monthnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 4px}
+  .mtitle{font-family:var(--disp);font-weight:700;font-size:1.25rem;text-align:center;flex:1}
+  .btn.mnav{width:44px;height:44px;padding:0;font-size:1.3rem;line-height:1}
+  .btn.mnav:disabled{opacity:.35;cursor:default}
+  .stat.inc .n{color:var(--free)}.stat.exp .n{color:var(--occupied)}
+  .stat.res.pos .n{color:var(--free)}.stat.res.neg .n{color:var(--occupied)}
+  .stat .n.money{font-size:1.3rem;white-space:nowrap}
+  #accSummary .stat.res{flex-basis:100%}
+  #accSummary .stat.res .n.money{font-size:1.7rem}
+  .pricein .btn{padding:0 20px;border-radius:12px}
+  .card{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px 14px}
+  .card h2{font-family:var(--disp);font-size:1rem;font-weight:600;color:var(--muted);margin:0 0 12px}
+  .cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .cardhead h2{margin:0}
+  .cardhead .btn{font-size:.78rem;padding:7px 12px}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+  .formgrid .full{grid-column:1/-1}
+  .formgrid input,.formgrid select{width:100%;font-family:inherit;font-size:1rem;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb;color:var(--ink);margin-bottom:12px;min-height:46px}
+  .formgrid select{appearance:auto}
+  .formgrid input:focus,.formgrid select:focus{outline:none;border-color:var(--arrive);background:#fff}
+  .addcol{display:flex;align-items:flex-end}
+  .addcol .btn{width:100%;padding:13px;margin-bottom:12px}
+  .formerr{color:var(--occupied);font-size:.82rem;font-weight:600;margin:0;min-height:1em}
+  .irow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+  .irow:last-child{border-bottom:0}
+  .irow .v{font-family:var(--disp);font-weight:700;white-space:nowrap}
+  .irow.total{font-weight:700}
+  .pricerow{margin-top:14px}
+  .pricein{display:flex;gap:8px}
+  .pricein input{flex:1;font-family:inherit;font-size:1rem;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb}
+  .catrow{margin:0 0 10px}
+  .catrow .top{display:flex;justify-content:space-between;font-size:.86rem;margin-bottom:4px}
+  .catrow .top .v{font-family:var(--disp);font-weight:700}
+  .catbar{height:8px;background:#f1f3f2;border-radius:6px;overflow:hidden}
+  .catbar span{display:block;height:100%;background:var(--occupied);border-radius:6px}
+  .edate{font-family:var(--disp);font-weight:700;font-size:.78rem;color:var(--muted);background:#f1f3f2;border-radius:8px;padding:6px 8px;white-space:nowrap;min-width:54px;text-align:center}
+  .eamt{font-family:var(--disp);font-weight:700;white-space:nowrap}
   #toasts{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:120;pointer-events:none;padding:0 12px}
   .toast{background:var(--ink);color:#fff;font-size:.86rem;font-weight:500;padding:11px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);max-width:420px;opacity:0;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease}
   .toast.in{opacity:1;transform:translateY(0)}
@@ -167,6 +208,12 @@
     Add your Firebase keys in the <strong>FIREBASE CONFIG</strong> section of this file, then reload.
   </div>
 
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-page="board" id="tabBoard">Room Board</button>
+    <button class="tab" data-page="accounts" id="tabAccounts">Accounts</button>
+  </nav>
+
+  <div id="pageBoard">
   <section class="summary" id="summary"></section>
 
   <div class="toolbar">
@@ -192,6 +239,51 @@
   </section>
 
   <footer id="footer"></footer>
+  </div>
+
+  <!-- ================= ACCOUNTS PAGE ================= -->
+  <div id="pageAccounts" hidden>
+    <div class="monthnav">
+      <button class="btn mnav" id="mPrev" aria-label="Previous month">‹</button>
+      <span class="mtitle" id="accMonth"></span>
+      <button class="btn mnav" id="mNext" aria-label="Next month">›</button>
+    </div>
+
+    <section class="summary" id="accSummary"></section>
+
+    <section class="card">
+      <h2 id="addExpHeading">Add expense</h2>
+      <div class="formgrid">
+        <div><label for="exDate" id="lblExDate">Date</label><input type="date" id="exDate"></div>
+        <div><label for="exCat" id="lblExCat">Category</label><select id="exCat"></select></div>
+        <div class="full"><label for="exNote" id="lblExNote">Note (optional)</label><input type="text" id="exNote" autocomplete="off"></div>
+        <div><label for="exAmount" id="lblExAmount">Amount (฿)</label><input type="text" inputmode="decimal" id="exAmount" autocomplete="off" placeholder="0"></div>
+        <div class="addcol"><button class="btn primary" id="exAdd">Add</button></div>
+      </div>
+      <p class="formerr" id="exErr"></p>
+    </section>
+
+    <section class="card">
+      <h2 id="incomeHeading">Room income</h2>
+      <div id="incomeBox"></div>
+      <div class="pricerow">
+        <label for="priceInput" id="lblPrice">Price per night (฿)</label>
+        <div class="pricein"><input type="text" inputmode="numeric" id="priceInput"><button class="btn" id="priceSave">Save</button></div>
+      </div>
+      <p class="snote" id="incomeNote"></p>
+    </section>
+
+    <section class="card">
+      <h2 id="byCatHeading">Expenses by category</h2>
+      <div id="catBox"></div>
+    </section>
+
+    <section class="card">
+      <div class="cardhead"><h2 id="expListHeading">Expenses this month</h2>
+        <button class="btn" id="copySalaries" hidden>Copy salaries from last month</button></div>
+      <ul class="ulist" id="expList"></ul>
+    </section>
+  </div>
 </div>
 
 <div class="scrim" id="scrim">
@@ -213,7 +305,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc }
+  import { getFirestore, doc, onSnapshot, setDoc, updateDoc, deleteField }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, signInAnonymously, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -263,7 +355,25 @@
       statsHeading:"Occupancy statistics", roomsOccupied:"rooms occupied",
       noStats:"No occupancies counted in this month.",
       pendingTitle:"Waiting to be counted: ", countsIn:"counts in {m} min", countsInTile:"Counts in statistics in {m} min",
-      statsNote:"A room is counted 1 hour after it is set Occupied. Set it back to Free within that hour to undo a mistake — it will not be counted." },
+      statsNote:"A room is counted 1 hour after it is set Occupied. Set it back to Free within that hour to undo a mistake — it will not be counted.",
+      tabBoard:"Room Board", tabAccounts:"Accounts",
+      income:"Income", expenses:"Expenses", result:"Result",
+      addExpHeading:"Add expense", lblExDate:"Date", lblExCat:"Category", lblExNote:"Note (optional)", lblExAmount:"Amount (฿)", exAdd:"Add",
+      notePlaceholder:"e.g. PEA bill, or employee name",
+      incomeHeading:"Room income", lblPrice:"Price per night (฿)", priceSave:"Save", priceSaved:"Price saved",
+      nightsWord:"nights", nightWord:"night", totalIncome:"Total income",
+      noIncome:"No counted room nights in this month yet.",
+      incomeNote:"Income = counted room nights × price per night. Only stays that passed the 1-hour check are included. A room still occupied counts the nights so far. A price change applies to new stays only.",
+      byCatHeading:"Expenses by category", expListHeading:"Expenses this month",
+      noExpenses:"No expenses added for this month.",
+      copySalaries:"Copy salaries from last month",
+      confirmCopy:"Copy {n} salary entries from last month into this month?",
+      confirmDelExp:"Delete this expense?",
+      errAmount:"Enter an amount greater than 0.", errDate:"Choose a date.", errPrice:"Enter a price greater than 0.",
+      expAdded:"Expense added", saveFail:"Save failed — check connection",
+      cat_electric:"Electricity", cat_water:"Water", cat_internet:"Internet & phone", cat_coffee:"Coffee & drinks",
+      cat_soap:"Soap & toiletries", cat_laundry:"Washing machine soap", cat_cleaning:"Cleaning supplies",
+      cat_repairs:"Repairs & maintenance", cat_salary:"Salary", cat_other:"Other" },
     th:{ eyebrow:"แผนกต้อนรับรีสอร์ท", title:"กระดานห้องพัก", roomWord:"ห้อง",
       free:"ว่าง", occupied:"ไม่ว่าง", arrive:"เข้าพักวันนี้",
       roomsHeading:"ห้องพัก", clearAll:"ล้างทั้งหมด", upcomingHeading:"การจองที่กำลังจะมาถึง",
@@ -283,7 +393,25 @@
       statsHeading:"สถิติการเข้าพัก", roomsOccupied:"ห้องที่มีผู้เข้าพัก",
       noStats:"ยังไม่มีการเข้าพักที่นับในเดือนนี้",
       pendingTitle:"รอการนับ: ", countsIn:"นับในอีก {m} นาที", countsInTile:"จะนับในสถิติอีก {m} นาที",
-      statsNote:"ห้องจะถูกนับในสถิติหลังจากตั้งเป็นไม่ว่างครบ 1 ชั่วโมง หากตั้งผิด ให้เปลี่ยนกลับเป็นว่างภายใน 1 ชั่วโมง ห้องนั้นจะไม่ถูกนับ" }
+      statsNote:"ห้องจะถูกนับในสถิติหลังจากตั้งเป็นไม่ว่างครบ 1 ชั่วโมง หากตั้งผิด ให้เปลี่ยนกลับเป็นว่างภายใน 1 ชั่วโมง ห้องนั้นจะไม่ถูกนับ",
+      tabBoard:"กระดานห้องพัก", tabAccounts:"บัญชี",
+      income:"รายรับ", expenses:"รายจ่าย", result:"คงเหลือ",
+      addExpHeading:"เพิ่มรายจ่าย", lblExDate:"วันที่", lblExCat:"หมวดหมู่", lblExNote:"หมายเหตุ (ไม่บังคับ)", lblExAmount:"จำนวนเงิน (฿)", exAdd:"เพิ่ม",
+      notePlaceholder:"เช่น ค่าไฟ กฟภ. หรือชื่อพนักงาน",
+      incomeHeading:"รายรับจากห้องพัก", lblPrice:"ราคาต่อคืน (฿)", priceSave:"บันทึก", priceSaved:"บันทึกราคาแล้ว",
+      nightsWord:"คืน", nightWord:"คืน", totalIncome:"รายรับรวม",
+      noIncome:"ยังไม่มีคืนที่นับในเดือนนี้",
+      incomeNote:"รายรับ = จำนวนคืนที่นับ × ราคาต่อคืน นับเฉพาะห้องที่ผ่านการตรวจสอบ 1 ชั่วโมงแล้ว ห้องที่ยังมีผู้เข้าพักจะนับคืนที่ผ่านมาแล้ว การเปลี่ยนราคามีผลกับการเข้าพักใหม่เท่านั้น",
+      byCatHeading:"รายจ่ายตามหมวดหมู่", expListHeading:"รายจ่ายเดือนนี้",
+      noExpenses:"ยังไม่มีรายจ่ายในเดือนนี้",
+      copySalaries:"คัดลอกเงินเดือนจากเดือนที่แล้ว",
+      confirmCopy:"คัดลอกเงินเดือน {n} รายการจากเดือนที่แล้วมาเดือนนี้?",
+      confirmDelExp:"ลบรายจ่ายนี้?",
+      errAmount:"กรุณาใส่จำนวนเงินมากกว่า 0", errDate:"กรุณาเลือกวันที่", errPrice:"กรุณาใส่ราคามากกว่า 0",
+      expAdded:"เพิ่มรายจ่ายแล้ว", saveFail:"บันทึกไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ",
+      cat_electric:"ค่าไฟฟ้า", cat_water:"ค่าน้ำ", cat_internet:"อินเทอร์เน็ตและโทรศัพท์", cat_coffee:"กาแฟและเครื่องดื่ม",
+      cat_soap:"สบู่และของใช้ในห้องน้ำ", cat_laundry:"ผงซักฟอก / น้ำยาซักผ้า", cat_cleaning:"อุปกรณ์ทำความสะอาด",
+      cat_repairs:"ซ่อมแซมและบำรุงรักษา", cat_salary:"เงินเดือน", cat_other:"อื่นๆ" }
   };
   let lang = (ls.get(LANG_KEY)==="th") ? "th" : "en";
   const T = k => (STR[lang][k] !== undefined ? STR[lang][k] : k);
@@ -310,6 +438,10 @@
      the same stay at once just write the same value (no double counting). */
   const GRACE_MS = 60*60*1000;
   let statsRef=null, stays={}, statsReady=false, selMonth=null;
+  /* accounts: board/accounts = { settings:{price}, expenses:{ id:{date,cat,note,amount,createdAt} } } */
+  const DEFAULT_PRICE = 400;
+  let accRef=null, accData={settings:{},expenses:{}}, accReady=false;
+  const nightPrice = () => { const p=+((accData.settings||{}).price); return p>0 ? p : DEFAULT_PRICE; };
   const monthKey = ts => { const d=new Date(ts); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); };
   const newStayId = () => "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const inGrace = r => r.status==="occupied" && r.occSince && (Date.now()-r.occSince) < GRACE_MS;
@@ -324,7 +456,8 @@
   function closeStay(r){
     const now=Date.now();
     if(r.occSince && r.stayId && now-r.occSince >= GRACE_MS)
-      writeStay(r.stayId, {room:r.id, start:r.occSince, month:monthKey(r.occSince), end:now});
+      writeStay(r.stayId, {room:r.id, start:r.occSince, month:monthKey(r.occSince), end:now,
+        price:(stays[r.stayId]&&stays[r.stayId].price)||nightPrice()});
     delete r.occSince; delete r.stayId;
   }
   /* any occupied room past the 1-hour window that is not yet in the statistics gets added */
@@ -332,7 +465,7 @@
     if(!ready||!statsReady) return false; const now=Date.now(); let any=false;
     state.rooms.forEach(r=>{
       if(r.status==="occupied" && r.occSince && r.stayId && now-r.occSince>=GRACE_MS && !stays[r.stayId]){
-        writeStay(r.stayId, {room:r.id, start:r.occSince, month:monthKey(r.occSince)}); any=true; }
+        writeStay(r.stayId, {room:r.id, start:r.occSince, month:monthKey(r.occSince), price:nightPrice()}); any=true; }
     });
     return any;
   }
@@ -414,6 +547,7 @@
     const bg=document.getElementById("bguest"); if(bg) bg.placeholder=T("guestPlaceholder");
     document.querySelectorAll("#langTog .seg").forEach(b=>b.classList.toggle("active", b.dataset.lang===lang));
     setSync(syncCls,syncKeyName);
+    accText();
   }
 
   function render(){
@@ -481,6 +615,7 @@
     else { pEl.hidden=true; pEl.innerHTML=""; }
     document.getElementById("statsNote").textContent=T("statsNote");
     document.getElementById("statsHeading").textContent=T("statsHeading");
+    renderAccounts();
   }
   document.getElementById("bars").addEventListener("click", e=>{
     const b=e.target.closest("[data-month]"); if(!b) return; selMonth=b.dataset.month; renderStats(); });
@@ -552,6 +687,162 @@
     closeSheet(); localSound(r); persist();
   });
 
+  /* ================= ACCOUNTS PAGE ================= */
+  const CATS=["electric","water","internet","coffee","soap","laundry","cleaning","repairs","salary","other"];
+  const PAGE_KEY="resort_page", DAY=86400000;
+  let page = ls.get(PAGE_KEY)==="accounts" ? "accounts" : "board";
+  let accMonth = monthKey(Date.now());
+  const curMonth = () => monthKey(Date.now());
+  const baht = n => { const v=Math.round(n*100)/100; const f=v%1?2:0;
+    return "฿"+v.toLocaleString("en-US",{minimumFractionDigits:f,maximumFractionDigits:f}); };
+  const shiftMonth = (key,d) => { const [y,m]=key.split("-").map(Number); return monthKey(new Date(y,m-1+d,1).getTime()); };
+  const monthLabel = key => { const [y,m]=key.split("-").map(Number);
+    return new Date(y,m-1,1).toLocaleDateString(lang==="th"?"th-TH":"en-US",{month:"long",year:"numeric"}); };
+  const newExpId = () => "e"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const parseAmount = v => { const n=parseFloat(String(v).replace(/[,\s฿]/g,"")); return isFinite(n)?n:NaN; };
+
+  /* which calendar months each night of a stay falls in.
+     nights = hours occupied / 24, rounded, minimum 1 (14:00 -> 11:00 next day = 1 night).
+     A room still occupied counts the nights so far. */
+  function stayNightMonths(s, now){
+    const end = s.end || now;
+    const n = Math.min(366, Math.max(1, Math.round((end - s.start)/DAY)));
+    const d0 = new Date(s.start); const out=[];
+    for(let i=0;i<n;i++) out.push(monthKey(new Date(d0.getFullYear(), d0.getMonth(), d0.getDate()+i).getTime()));
+    return out;
+  }
+  function monthIncome(key){
+    const now=Date.now(); let nights=0, total=0; const byRoom={}, byPrice={};
+    Object.values(stays).forEach(s=>{
+      if(!s || !s.start) return;
+      const p = +s.price>0 ? +s.price : DEFAULT_PRICE;
+      const k = stayNightMonths(s,now).filter(m=>m===key).length; if(!k) return;
+      nights+=k; total+=k*p; byRoom[s.room]=(byRoom[s.room]||0)+k; byPrice[p]=(byPrice[p]||0)+k;
+    });
+    return {nights,total,byRoom,byPrice};
+  }
+  const monthExpenses = key => Object.entries(accData.expenses||{})
+    .filter(([id,e])=>e && typeof e.date==="string" && e.date.slice(0,7)===key)
+    .map(([id,e])=>({id,...e}));
+
+  function setPage(p){
+    page=p; ls.set(PAGE_KEY,p);
+    document.getElementById("pageBoard").hidden = p!=="board";
+    document.getElementById("pageAccounts").hidden = p!=="accounts";
+    document.querySelectorAll("#tabs .tab").forEach(b=>b.classList.toggle("active", b.dataset.page===p));
+    if(p==="accounts"){ setFormDate(); renderAccounts(); }
+    window.scrollTo(0,0);
+  }
+  function setFormDate(){ document.getElementById("exDate").value = accMonth===curMonth() ? todayStr() : accMonth+"-01"; }
+
+  function accText(){
+    const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
+    ["tabBoard","tabAccounts","addExpHeading","lblExDate","lblExCat","lblExNote","lblExAmount","exAdd",
+     "incomeHeading","lblPrice","priceSave","byCatHeading","expListHeading","copySalaries","incomeNote"].forEach(k=>set(k,T(k)));
+    document.getElementById("exNote").placeholder=T("notePlaceholder");
+    document.getElementById("exErr").textContent="";
+    const sel=document.getElementById("exCat"); const cur=sel.value||"electric";
+    sel.innerHTML=CATS.map(c=>'<option value="'+c+'">'+esc(T("cat_"+c))+'</option>').join(""); sel.value=cur;
+  }
+
+  function renderAccounts(){
+    if(page!=="accounts") return;
+    accText();
+    document.getElementById("accMonth").textContent=monthLabel(accMonth);
+    document.getElementById("mNext").disabled = accMonth>=curMonth();
+    const inc=monthIncome(accMonth), exps=monthExpenses(accMonth);
+    const expTotal=exps.reduce((a,e)=>a+(+e.amount||0),0), res=inc.total-expTotal;
+    document.getElementById("accSummary").innerHTML=
+      '<div class="stat inc"><div class="n money">'+baht(inc.total)+'</div><div class="l">'+T("income")+'</div></div>'
+      +'<div class="stat exp"><div class="n money">'+baht(expTotal)+'</div><div class="l">'+T("expenses")+'</div></div>'
+      +'<div class="stat res '+(res>=0?"pos":"neg")+'"><div class="n money">'+(res<0?"−":"")+baht(Math.abs(res))+'</div><div class="l">'+T("result")+'</div></div>';
+
+    // income detail
+    let ih="";
+    if(!inc.nights) ih='<div class="empty">'+T("noIncome")+'</div>';
+    else {
+      for(let i=1;i<=ROOM_COUNT;i++){ const n=inc.byRoom[i]; if(!n) continue;
+        ih+='<div class="irow"><span>'+T("roomWord")+' '+i+'</span><span class="v">'+n+' '+(n===1?T("nightWord"):T("nightsWord"))+'</span></div>'; }
+      Object.keys(inc.byPrice).sort((a,b)=>a-b).forEach(p=>{ const n=inc.byPrice[p];
+        ih+='<div class="irow"><span>'+n+' '+T("nightsWord")+' × '+baht(+p)+'</span><span class="v">'+baht(n*p)+'</span></div>'; });
+      ih+='<div class="irow total"><span>'+T("totalIncome")+'</span><span class="v">'+baht(inc.total)+'</span></div>';
+    }
+    document.getElementById("incomeBox").innerHTML=ih;
+    const pin=document.getElementById("priceInput"); if(document.activeElement!==pin) pin.value=nightPrice();
+
+    // by category
+    const byCat={}; exps.forEach(e=>{ byCat[e.cat]=(byCat[e.cat]||0)+(+e.amount||0); });
+    const cats=Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]); const cmax=Math.max(1,...cats.map(c=>byCat[c]));
+    document.getElementById("catBox").innerHTML = cats.length
+      ? cats.map(c=>'<div class="catrow"><div class="top"><span>'+esc(T("cat_"+c))+'</span><span class="v">'+baht(byCat[c])+'</span></div>'
+          +'<div class="catbar"><span style="width:'+(byCat[c]/cmax*100)+'%"></span></div></div>').join("")
+      : '<div class="empty">'+T("noExpenses")+'</div>';
+
+    // list
+    const ul=document.getElementById("expList");
+    exps.sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||0)-(a.createdAt||0));
+    ul.innerHTML = exps.length ? exps.map(e=>'<li class="urow"><span class="edate">'+fmt(e.date)+'</span>'
+        +'<div class="uinfo"><div class="r">'+esc(T("cat_"+e.cat))+'</div>'+(e.note?'<div class="g">'+esc(e.note)+'</div>':'')+'</div>'
+        +'<span class="eamt">'+baht(+e.amount||0)+'</span>'
+        +'<button class="x" data-delexp="'+esc(e.id)+'" aria-label="delete">×</button></li>').join("")
+      : '<li class="empty">'+T("noExpenses")+'</li>';
+
+    const prevSal=monthExpenses(shiftMonth(accMonth,-1)).filter(e=>e.cat==="salary");
+    // offer the copy only when last month has salaries and this month has none yet (prevents double entries)
+    document.getElementById("copySalaries").hidden = !prevSal.length || exps.some(e=>e.cat==="salary");
+  }
+
+  function saveAcc(patch){
+    if(!accRef) return Promise.resolve();
+    return setDoc(accRef, patch, {merge:true}).catch(e=>{ console.error(e); showToast(T("saveFail")); });
+  }
+
+  document.getElementById("tabs").addEventListener("click",e=>{ const b=e.target.closest(".tab"); if(b) setPage(b.dataset.page); });
+  document.getElementById("mPrev").addEventListener("click",()=>{ accMonth=shiftMonth(accMonth,-1); setFormDate(); renderAccounts(); });
+  document.getElementById("mNext").addEventListener("click",()=>{ if(accMonth>=curMonth()) return; accMonth=shiftMonth(accMonth,1); setFormDate(); renderAccounts(); });
+
+  document.getElementById("exAdd").addEventListener("click",()=>{
+    const err=document.getElementById("exErr"); err.textContent="";
+    const date=document.getElementById("exDate").value;
+    const cat=document.getElementById("exCat").value;
+    const note=document.getElementById("exNote").value.trim();
+    const amount=parseAmount(document.getElementById("exAmount").value);
+    if(!date){ err.textContent=T("errDate"); return; }
+    if(!(amount>0)){ err.textContent=T("errAmount"); document.getElementById("exAmount").focus(); return; }
+    const id=newExpId(); const data={date,cat,note,amount,createdAt:Date.now()};
+    accData.expenses=accData.expenses||{}; accData.expenses[id]=data;
+    saveAcc({expenses:{[id]:data}});
+    document.getElementById("exNote").value=""; document.getElementById("exAmount").value="";
+    if(date.slice(0,7)!==accMonth) accMonth=date.slice(0,7);
+    showToast(T("expAdded")); renderAccounts();
+  });
+  document.getElementById("exAmount").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("exAdd").click(); });
+
+  document.getElementById("expList").addEventListener("click",e=>{
+    const b=e.target.closest("[data-delexp]"); if(!b) return;
+    if(!confirm(T("confirmDelExp"))) return;
+    const id=b.dataset.delexp; delete accData.expenses[id]; renderAccounts();
+    if(accRef) updateDoc(accRef,{["expenses."+id]:deleteField()}).catch(e=>{ console.error(e); showToast(T("saveFail")); });
+  });
+
+  document.getElementById("priceSave").addEventListener("click",()=>{
+    const p=parseAmount(document.getElementById("priceInput").value);
+    if(!(p>0)){ showToast(T("errPrice")); return; }
+    accData.settings=Object.assign({},accData.settings,{price:p});
+    saveAcc({settings:{price:p}}); document.getElementById("priceInput").blur(); showToast(T("priceSaved")); renderAccounts();
+  });
+
+  document.getElementById("copySalaries").addEventListener("click",()=>{
+    const prev=monthExpenses(shiftMonth(accMonth,-1)).filter(e=>e.cat==="salary"); if(!prev.length) return;
+    if(!confirm(T("confirmCopy").replace("{n}",prev.length))) return;
+    const [y,m]=accMonth.split("-").map(Number); const last=new Date(y,m,0).getDate();
+    const patch={}; const now=Date.now();
+    prev.forEach((e,i)=>{ const day=Math.min(+e.date.slice(8,10)||1,last);
+      const data={date:accMonth+"-"+String(day).padStart(2,"0"),cat:"salary",note:e.note||"",amount:+e.amount,createdAt:now+i};
+      const id=newExpId()+i; patch[id]=data; accData.expenses[id]=data; });
+    saveAcc({expenses:patch}); renderAccounts();
+  });
+
   /* ---------------- language toggle ---------------- */
   document.getElementById("langTog").addEventListener("click",e=>{
     const b=e.target.closest(".seg"); if(!b) return;
@@ -593,7 +884,7 @@
   setTimeout(reminderCheck,5000);
 
   /* ---------------- start ---------------- */
-  applyStaticText(); render();
+  applyStaticText(); render(); setPage(page);
 
   function startFirestore(){
     ref=doc(db,"board","main");
@@ -626,6 +917,15 @@
       statsReady=true;
       if(reconcile()) persist(); else renderStats();
     }, err=>{ console.error("stats:",err); });
+
+    // accounts document: expenses + price per night
+    accRef=doc(db,"board","accounts");
+    onSnapshot(accRef, snap=>{
+      const d = snap.exists() ? snap.data() : {};
+      accData = { settings:(d.settings&&typeof d.settings==="object")?d.settings:{},
+                  expenses:(d.expenses&&typeof d.expenses==="object")?d.expenses:{} };
+      accReady=true; renderAccounts();
+    }, err=>{ console.error("accounts:",err); });
   }
 
   if(!configured){
