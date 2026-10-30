@@ -259,6 +259,8 @@
   /* ---- guest ID cards ---- */
   .room-actions .mini+.mini{border-left:1px solid var(--line)}
   .mini.idb{color:var(--teal)}
+  .mini.xb{color:#5b4bc4}
+  .xbchip{position:relative;z-index:1;margin-top:9px;background:#ebe8fd;color:#3b2f86;border-radius:10px;padding:6px 10px;font-size:.84rem;font-weight:700}
   .idtake{display:block;text-align:center;text-transform:none;letter-spacing:0;font-weight:600;color:var(--arrive);padding:16px;margin:0 0 12px;font-size:1rem;background:#e9f0fd;color:var(--arrive);border-color:#cfdcf7;border-radius:14px}
   .idprev{display:block;width:100%;max-height:300px;object-fit:contain;border-radius:12px;background:#f1f3f2;margin:0 0 14px}
   .idrow{cursor:pointer}
@@ -401,6 +403,10 @@
           <button class="btn" id="bfpSave" style="align-self:flex-end;height:46px">Save</button>
         </div>
       </div>
+      <div class="pricerow">
+        <label for="xbPriceIn" id="lblXbPrice">Extra bed per night (฿)</label>
+        <div class="pricein"><input type="text" inputmode="numeric" id="xbPriceIn"><button class="btn" id="xbPriceSave">Save</button></div>
+      </div>
       <p class="snote" id="incomeNote"></p>
       <div id="stayBox"></div>
     </section>
@@ -457,6 +463,20 @@
   </div>
 </div>
 
+<div class="scrim" id="xbScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xbTitle">
+    <h3 id="xbTitle">Extra bed</h3>
+    <p class="sub" id="xbSub"></p>
+    <div class="steprow"><span class="sn" id="xbLbl">Extra beds</span>
+      <div class="stepper"><button data-xstep="-1" aria-label="minus">−</button><span class="q zero" id="xbQ">0</span><button data-xstep="1" aria-label="plus">+</button></div></div>
+    <p class="snote" id="xbNote" style="margin:0 0 14px"></p>
+    <div class="sheet-actions">
+      <button class="btn" id="xbCancel">Cancel</button>
+      <button class="btn primary" id="xbSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="scrim" id="idScrim">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="idTitle">
     <h3 id="idTitle">Guest ID card</h3>
@@ -468,8 +488,8 @@
       <p class="snote" id="idHint" style="margin:0 0 8px"></p>
       <div class="idtools"><button class="btn" id="idAdjust">✂ Adjust</button><button class="btn" id="idRot">↻ Rotate</button><button class="btn" id="idFull">Full photo</button></div>
     </div>
-    <label for="idGuestIn" id="idLblGuest">Guest name (optional)</label>
-    <input type="text" id="idGuestIn" autocomplete="off">
+    <label for="idGuestIn" id="idLblGuest">Phone number</label>
+    <input type="tel" inputmode="tel" id="idGuestIn" autocomplete="off">
     <p class="snote" id="idPriv" style="margin:-6px 0 10px"></p>
     <p class="formerr" id="idErr" style="margin-bottom:8px"></p>
     <div class="sheet-actions">
@@ -530,7 +550,7 @@
       noBookings:"No bookings yet. Use \u201CBook future date\u201D on any room to add one.",
       sheetTitle:"Book a room", labelDate:"Arrival date", labelGuest:"Guest name (optional)",
       cancel:"Cancel", saveBooking:"Save booking", guestPlaceholder:"e.g. Dana",
-      footer:"Hold a room to switch Free / Occupied · Yellow dot = breakfast ordered · Blue dot = future booking · Rooms turn blue on arrival day · Synced to every device",
+      footer:"Hold a room to switch Free / Occupied · Yellow dot = breakfast ordered · 🛏 = extra bed · Blue dot = future booking · Rooms turn blue on arrival day · Synced to every device",
       syncOk:"Synced", syncConnecting:"Connecting…", syncSignin:"Signing in…", syncOffline:"Offline",
       syncSaveFail:"Save failed — retry", syncNotConfigured:"Not configured", syncConfigError:"Config error", syncAuthFail:"Sign-in failed",
       lockTitle:"Front Desk Access", lockSub:"Enter the staff passcode to open the room board.",
@@ -567,7 +587,7 @@
       accDeviceNote:"Accounts are unlocked on this device.", accLockBtn:"Lock this device",
       confirmLock:"Lock Accounts on this device? You will need the code to open it again.", accLocked:"Accounts locked on this device",
       exportHeading:"Report", rangeAll:"All", exPdf:"PDF", exXlsx:"Excel", exLoading:"Preparing…",
-      exportNote:"PDF downloads an A4 report. Excel downloads a file with Summary, Income, Breakfast and Expenses sheets.",
+      exportNote:"PDF downloads an A4 report. Excel downloads a file with Summary, Income, Breakfast, Extra beds and Expenses sheets.",
       pdfBusy:"Creating PDF…", pdfFail:"Could not create the PDF — check the connection and try again.", rpPage:"Page",
       addBreakfast:"+ Breakfast", bfTitle:"Breakfast", bfLblDate:"Breakfast date", bfSet:"Breakfast set {n}", bfSetShort:"Set {n}",
       bfToday:"Breakfast today", bfTomorrow:"Breakfast tomorrow", bfOn:"Breakfast {d}",
@@ -579,8 +599,16 @@
       confirmDelBf:"Delete this breakfast?\n\n{room} · {date}\n{amt}", bfDeleted:"Breakfast deleted",
       rpRoomIncome:"Room income", rpBreakfast:"Breakfast", rpBfOrders:"Breakfast orders", rpSet:"Set", rpQty:"Qty", rpUnitPrice:"Price",
       rpRooms:"Rooms", sheetBreakfast:"Breakfast",
+      addXbed:"+ Extra bed", xbTitle:"Extra bed", xbLbl:"Extra beds",
+      xbNote:"Counts every night while the room is occupied. It stops when the room is set Free.",
+      xbNeedOcc:"Set the room to Occupied first, then add the extra bed.", xbSaved:"Extra bed saved",
+      xbOne:"1 extra bed", xbMany:"{n} extra beds", lblXbPrice:"Extra bed per night (฿)", xbPriceSaved:"Extra bed price saved",
+      xbIncNote:"Extra beds count every night while the room is occupied.", xbIncLine:"extra-bed nights",
+      xbHeading:"Extra beds this month ({n})", xbHint:"Tap × to delete an extra bed that was entered by mistake.",
+      confirmDelXb:"Delete this extra bed?\n\n{room} · {dates}\n{amt}", xbDeleted:"Extra bed deleted",
+      rpXbed:"Extra beds", rpBeds:"Beds", rpBedNights:"Bed-nights", sheetXbed:"Extra beds",
       idBtn:"🪪 ID card", idTitle:"Guest ID card", idTake:"📷 Take photo", idRetake:"📷 Take again", idProcessing:"Preparing photo…",
-      idGuest:"Guest name (optional)", idSave:"Save", idSaving:"Saving…", idSaved:"ID card saved", idNoPhoto:"Take a photo first.",
+      idGuest:"Phone number", idPhoneErr:"Enter the guest's phone number.", idPhonePh:"e.g. 081 234 5678", idSave:"Save", idSaving:"Saving…", idSaved:"ID card saved", idNoPhoto:"Take a photo first.",
       idFail:"Could not save the ID card — check the connection and try again.",
       idRules:"Could not save — the Firebase rules for ID cards are not set up yet.",
       idPrivacy:"Stored safely. After saving, only the owner can open it — it does not stay on this phone.",
@@ -615,7 +643,7 @@
       noBookings:"ยังไม่มีการจอง แตะ \u201Cจองวันที่ล่วงหน้า\u201D ที่ห้องใดก็ได้เพื่อเพิ่ม",
       sheetTitle:"จองห้องพัก", labelDate:"วันที่เข้าพัก", labelGuest:"ชื่อผู้เข้าพัก (ไม่บังคับ)",
       cancel:"ยกเลิก", saveBooking:"บันทึกการจอง", guestPlaceholder:"เช่น สมหญิง",
-      footer:"กดห้องค้างไว้เพื่อสลับ ว่าง / ไม่ว่าง · จุดสีเหลือง = สั่งอาหารเช้าแล้ว · จุดสีน้ำเงิน = การจองล่วงหน้า · ห้องจะเป็นสีน้ำเงินในวันเข้าพัก · ซิงค์ทุกอุปกรณ์",
+      footer:"กดห้องค้างไว้เพื่อสลับ ว่าง / ไม่ว่าง · จุดสีเหลือง = สั่งอาหารเช้าแล้ว · 🛏 = เตียงเสริม · จุดสีน้ำเงิน = การจองล่วงหน้า · ห้องจะเป็นสีน้ำเงินในวันเข้าพัก · ซิงค์ทุกอุปกรณ์",
       syncOk:"ซิงค์แล้ว", syncConnecting:"กำลังเชื่อมต่อ…", syncSignin:"กำลังเข้าสู่ระบบ…", syncOffline:"ออฟไลน์",
       syncSaveFail:"บันทึกไม่สำเร็จ — ลองใหม่", syncNotConfigured:"ยังไม่ได้ตั้งค่า", syncConfigError:"ตั้งค่าผิดพลาด", syncAuthFail:"เข้าสู่ระบบไม่สำเร็จ",
       lockTitle:"เข้าสู่แผนกต้อนรับ", lockSub:"ใส่รหัสผ่านพนักงานเพื่อเปิดกระดานห้องพัก",
@@ -652,7 +680,7 @@
       accDeviceNote:"บัญชีปลดล็อกอยู่บนอุปกรณ์นี้", accLockBtn:"ล็อกอุปกรณ์นี้",
       confirmLock:"ล็อกบัญชีบนอุปกรณ์นี้? ต้องใช้รหัสเพื่อเปิดอีกครั้ง", accLocked:"ล็อกบัญชีบนอุปกรณ์นี้แล้ว",
       exportHeading:"รายงาน", rangeAll:"ทั้งหมด", exPdf:"PDF", exXlsx:"Excel", exLoading:"กำลังเตรียม…",
-      exportNote:"PDF จะดาวน์โหลดรายงานขนาด A4  Excel จะดาวน์โหลดไฟล์ที่มีแผ่นงาน สรุป รายรับ อาหารเช้า และรายจ่าย",
+      exportNote:"PDF จะดาวน์โหลดรายงานขนาด A4  Excel จะดาวน์โหลดไฟล์ที่มีแผ่นงาน สรุป รายรับ อาหารเช้า เตียงเสริม และรายจ่าย",
       pdfBusy:"กำลังสร้าง PDF…", pdfFail:"สร้าง PDF ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อแล้วลองใหม่", rpPage:"หน้า",
       addBreakfast:"+ อาหารเช้า", bfTitle:"อาหารเช้า", bfLblDate:"วันที่รับอาหารเช้า", bfSet:"อาหารเช้าชุดที่ {n}", bfSetShort:"ชุดที่ {n}",
       bfToday:"อาหารเช้าวันนี้", bfTomorrow:"อาหารเช้าพรุ่งนี้", bfOn:"อาหารเช้า {d}",
@@ -664,8 +692,16 @@
       confirmDelBf:"ลบอาหารเช้านี้?\n\n{room} · {date}\n{amt}", bfDeleted:"ลบอาหารเช้าแล้ว",
       rpRoomIncome:"รายรับห้องพัก", rpBreakfast:"อาหารเช้า", rpBfOrders:"รายการอาหารเช้า", rpSet:"ชุด", rpQty:"จำนวน", rpUnitPrice:"ราคา",
       rpRooms:"ห้องพัก", sheetBreakfast:"อาหารเช้า",
+      addXbed:"+ เตียงเสริม", xbTitle:"เตียงเสริม", xbLbl:"จำนวนเตียงเสริม",
+      xbNote:"คิดทุกคืนที่ห้องมีผู้เข้าพัก และหยุดเมื่อตั้งห้องเป็นว่าง",
+      xbNeedOcc:"กรุณาตั้งห้องเป็นไม่ว่างก่อน แล้วจึงเพิ่มเตียงเสริม", xbSaved:"บันทึกเตียงเสริมแล้ว",
+      xbOne:"เตียงเสริม 1 เตียง", xbMany:"เตียงเสริม {n} เตียง", lblXbPrice:"เตียงเสริมต่อคืน (฿)", xbPriceSaved:"บันทึกราคาเตียงเสริมแล้ว",
+      xbIncNote:"เตียงเสริมคิดทุกคืนที่ห้องมีผู้เข้าพัก", xbIncLine:"คืน-เตียงเสริม",
+      xbHeading:"เตียงเสริมเดือนนี้ ({n})", xbHint:"แตะ × เพื่อลบเตียงเสริมที่ใส่ผิด",
+      confirmDelXb:"ลบเตียงเสริมนี้?\n\n{room} · {dates}\n{amt}", xbDeleted:"ลบเตียงเสริมแล้ว",
+      rpXbed:"เตียงเสริม", rpBeds:"เตียง", rpBedNights:"คืน-เตียง", sheetXbed:"เตียงเสริม",
       idBtn:"🪪 บัตรประชาชน", idTitle:"บัตรประชาชนผู้เข้าพัก", idTake:"📷 ถ่ายรูป", idRetake:"📷 ถ่ายใหม่", idProcessing:"กำลังเตรียมรูป…",
-      idGuest:"ชื่อผู้เข้าพัก (ไม่บังคับ)", idSave:"บันทึก", idSaving:"กำลังบันทึก…", idSaved:"บันทึกบัตรแล้ว", idNoPhoto:"กรุณาถ่ายรูปก่อน",
+      idGuest:"เบอร์โทรศัพท์", idPhoneErr:"กรุณาใส่เบอร์โทรศัพท์ของผู้เข้าพัก", idPhonePh:"เช่น 081 234 5678", idSave:"บันทึก", idSaving:"กำลังบันทึก…", idSaved:"บันทึกบัตรแล้ว", idNoPhoto:"กรุณาถ่ายรูปก่อน",
       idFail:"บันทึกบัตรไม่สำเร็จ — ตรวจสอบการเชื่อมต่อแล้วลองใหม่",
       idRules:"บันทึกไม่สำเร็จ — ยังไม่ได้ตั้งค่ากฎ Firebase สำหรับบัตรประชาชน",
       idPrivacy:"เก็บอย่างปลอดภัย หลังบันทึกแล้วเฉพาะเจ้าของเท่านั้นที่เปิดดูได้ — จะไม่เก็บไว้ในโทรศัพท์เครื่องนี้",
@@ -758,6 +794,27 @@
     delete r.breakfast; prevBf[r.id]=bfSig(r);
   }
 
+  /* ---------------- extra bed ----------------
+     Set on an OCCUPIED room (room.xbed = {n, since, id}). It counts every night while the room stays occupied —
+     like the room itself — and stops when the room is set Free or the number of beds is changed.
+     Accounts copy: board/stats -> xbeds:{id:{room,start,end,month,beds,price}}.
+     A bed that was on the room for less than 1 hour is treated as a mistake and not counted. */
+  let xbRecs={};
+  const xbPrice = () => +(statsSettings.xbedPrice)>0 ? +statsSettings.xbedPrice : 0;
+  const newXbId = () => "x"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  function writeXb(id, data){
+    xbRecs[id] = Object.assign({}, xbRecs[id]||{}, data);
+    if(!statsRef) return;
+    setDoc(statsRef, {xbeds:{[id]:data}}, {merge:true}).catch(e=>{ console.error(e); setSync("off","syncSaveFail"); });
+  }
+  function closeXbed(r){
+    const x=r.xbed; if(!x) return; delete r.xbed; if(!x.id) return;
+    const now=Date.now();
+    if(now-(x.since||now) < GRACE_MS) writeXb(x.id,{end:now, deleted:true, deletedAt:now});
+    else writeXb(x.id,{end:now});
+  }
+  const xbOn = x => x && x.start && !x.deleted && +x.beds>0 && (x.end || Date.now()-x.start>=GRACE_MS);
+
   function writeStay(id, data){
     stays[id] = Object.assign({}, stays[id]||{}, data);
     if(!statsRef) return;
@@ -798,6 +855,11 @@
         open.forEach(([id])=>writeStay(id,{end:now}));
       }
     });
+    // extra beds: a Free room has none; an occupied room's bed has an accounts copy; no copy stays open without its room
+    state.rooms.forEach(r=>{ if(!r.xbed) return;
+      if(r.status!=="occupied"){ closeXbed(r); ch=true; }
+      else if(r.xbed.id && !xbRecs[r.xbed.id]) writeXb(r.xbed.id,{room:r.id, start:r.xbed.since||now, month:monthKey(r.xbed.since||now), beds:r.xbed.n, price:xbPrice(), deleted:false}); });
+    Object.entries(xbRecs).forEach(([id,x])=>{ if(x && !x.end && !x.deleted && !state.rooms.some(r=>r.xbed && r.xbed.id===id)) writeXb(id,{end:now}); });
     // breakfast orders on the board that have no accounts copy yet (e.g. a failed save) get one
     state.rooms.forEach(r=>roomBf(r).forEach(b=>{ const id=bfId(r.id,b.date,b.set);
       if(!bfRecs[id]) writeBf(id,{room:r.id, date:b.date, month:b.date.slice(0,7), set:b.set, qty:b.qty, deleted:false, price:bfPrice(b.set)}); }));
@@ -860,9 +922,10 @@
     set("lockTitle",T("lockTitle")); set("lockSub",T("lockSub")); set("unlockBtn",T("lockBtn"));
     set("sheetTitle",T("sheetTitle")); set("labelDate",T("labelDate")); set("labelGuest",T("labelGuest"));
     set("bcancel",T("cancel")); set("bsave",T("saveBooking"));
+    set("xbTitle",T("xbTitle")); set("xbLbl",T("xbLbl")); set("xbNote",T("xbNote")); set("xbCancel",T("cancel")); set("xbSave",T("priceSave"));
     set("bfTitle",T("bfTitle")); set("bfLblDate",T("bfLblDate")); set("bfCancel",T("cancel")); set("bfSave",T("priceSave"));
     set("pdfBusy",T("pdfBusy"));
-    set("idTitle",T("idTitle")); set("idLblGuest",T("idGuest")); set("idCancel",T("cancel")); set("idPriv",T("idPrivacy"));
+    set("idTitle",T("idTitle")); set("idLblGuest",T("idGuest")); document.getElementById("idGuestIn").placeholder=T("idPhonePh"); set("idCancel",T("cancel")); set("idPriv",T("idPrivacy"));
     set("idDl",T("idSavePhoto")); set("idX",T("idClose"));
     if(!idBusy) set("idSaveBtn",T("idSave"));
     set("idTakeTxt", (typeof idSrc!=="undefined" && idSrc) ? T("idRetake") : T("idTake"));
@@ -899,9 +962,11 @@
         '<button class="face '+vs+'" data-toggle="'+r.id+'" aria-label="'+T("roomWord")+' '+r.id+', '+label+'">'
         +'<div class="rline"><span class="rnum">'+r.id+'</span><span class="rname">'+T("roomWord")+' '+r.id+'</span></div>'
         +'<div class="status">'+label+'</div>'+nextHtml+bfHtml
+        +(r.xbed && r.xbed.n>0 ? '<div class="xbchip">🛏 '+esc((r.xbed.n===1?T("xbOne"):T("xbMany")).replace("{n}",r.xbed.n))+'</div>' : '')
         +(r.ids?'<div class="next">'+esc(r.ids===1?T("idTile"):T("idTileN").replace("{n}",r.ids))+'</div>':'')
         +'<div class="hint">'+hint+'</div></button>'+pip
-        +'<div class="room-actions"><button class="mini book" data-book="'+r.id+'">'+T("bookFuture")+'</button></div>'
+        +'<div class="room-actions"><button class="mini book" data-book="'+r.id+'">'+T("bookFuture")+'</button>'
+        +'<button class="mini xb" data-xbed="'+r.id+'">'+esc(T("addXbed"))+'</button></div>'
         +'<div class="room-actions"><button class="mini bf" data-bf="'+r.id+'">'+esc(T("addBreakfast"))+'</button>'
         +'<button class="mini idb" data-idcard="'+r.id+'">'+esc(T("idBtn"))+'</button></div>';
       grid.appendChild(card);
@@ -990,8 +1055,9 @@
   function localSound(r){ const vs=viewStatus(r); if(prevView[r.id]!==vs){ playSound(vs); prevView[r.id]=vs; } }
 
   document.addEventListener("click", e=>{
-    const t=e.target.closest("[data-book],[data-del],[data-bf],[data-idcard]"); if(!t) return;
-    if(t.dataset.idcard){ openId(+t.dataset.idcard); }
+    const t=e.target.closest("[data-book],[data-del],[data-bf],[data-idcard],[data-xbed]"); if(!t) return;
+    if(t.dataset.xbed){ openXb(+t.dataset.xbed); }
+    else if(t.dataset.idcard){ openId(+t.dataset.idcard); }
     else if(t.dataset.bf){ openBf(+t.dataset.bf); }
     else if(t.dataset.book){ openSheet(+t.dataset.book); }
     else if(t.dataset.del){ const [rid,bid]=t.dataset.del.split(":"); const r=state.rooms.find(x=>x.id===+rid);
@@ -1000,7 +1066,7 @@
 
   /* hold a tile to change its status (prevents accidental taps) */
   function toggleRoom(id){ const r=state.rooms.find(x=>x.id===id); if(!r) return;
-    if(r.status==="occupied"){ closeStay(r); clearRoomBf(r); delete r.ids; r.status="free"; }
+    if(r.status==="occupied"){ closeStay(r); clearRoomBf(r); closeXbed(r); delete r.ids; r.status="free"; }
     else { r.status="occupied"; r.occSince=Date.now(); r.stayId=newStayId(); }
     localSound(r); persist(); }
   const HOLD_MS=550; let holdFace=null,holdTimer=null,holdRAF=null;
@@ -1021,8 +1087,36 @@
   document.getElementById("clearAll").addEventListener("click",()=>{
     if(!confirm(T("confirmClear"))) return;
     state.rooms.forEach(r=>{ if(r.status==="occupied") closeStay(r); });  // stays already past 1 h stay counted
-    state.rooms.forEach(clearRoomBf);
+    state.rooms.forEach(r=>{ clearRoomBf(r); closeXbed(r); });
     state=defaultState(); state.rooms.forEach(r=>{ prevView[r.id]="free"; prevBf[r.id]=""; }); persist();
+  });
+
+  /* ---------------- extra bed sheet ---------------- */
+  let xbRoom=null, xbN=0; const xbScrim=document.getElementById("xbScrim");
+  function xbQ(){ const q=document.getElementById("xbQ"); q.textContent=xbN; q.classList.toggle("zero",!xbN); }
+  function openXb(id){
+    const r=state.rooms.find(x=>x.id===id); if(!r) return;
+    if(r.status!=="occupied"){ alert(T("xbNeedOcc")); return; }
+    xbRoom=id; xbN=(r.xbed && r.xbed.n)||0;
+    document.getElementById("xbSub").textContent=T("roomWord")+" "+id; xbQ(); xbScrim.classList.add("open");
+  }
+  function closeXb(){ xbScrim.classList.remove("open"); xbRoom=null; }
+  document.getElementById("xbScrim").addEventListener("click",e=>{
+    if(e.target===xbScrim){ closeXb(); return; }
+    const b=e.target.closest("[data-xstep]"); if(!b) return; xbN=Math.max(0,Math.min(4,xbN+(+b.dataset.xstep))); xbQ(); });
+  document.getElementById("xbCancel").addEventListener("click",closeXb);
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&xbScrim.classList.contains("open")) closeXb(); });
+  document.getElementById("xbSave").addEventListener("click",()=>{
+    const r=state.rooms.find(x=>x.id===xbRoom); if(!r){ closeXb(); return; }
+    const cur=(r.xbed && r.xbed.n)||0;
+    if(xbN!==cur){
+      closeXbed(r);
+      if(xbN>0 && r.status==="occupied"){ const now=Date.now(), id=newXbId();
+        r.xbed={n:xbN, since:now, id};
+        writeXb(id,{room:r.id, start:now, month:monthKey(now), beds:xbN, price:xbPrice(), deleted:false}); }
+      showToast(T("xbSaved")); persist();
+    }
+    closeXb();
   });
 
   /* ---------------- breakfast sheet ---------------- */
@@ -1139,6 +1233,12 @@
   const monthBf = key => Object.entries(bfRecs)
     .filter(([id,b])=>b && !b.deleted && +b.qty>0 && typeof b.date==="string" && b.date.slice(0,7)===key)
     .map(([id,b])=>bfRow(id,b)).sort((a,b)=>b.date.localeCompare(a.date)||a.room-b.room||a.set-b.set);
+  /* extra-bed records of one month: nights inside the month × beds × price */
+  function monthXb(key){ const now=Date.now();
+    return Object.entries(xbRecs).filter(([id,x])=>xbOn(x)).map(([id,x])=>{
+      const p=+x.price>0?+x.price:xbPrice(), k=stayNightMonths(x,now).filter(m=>m===key).length;
+      return {id, room:x.room, start:x.start, end:x.end||null, beds:+x.beds, nights:k, price:p, amount:k*x.beds*p}; })
+      .filter(x=>x.nights).sort((a,b)=>b.start-a.start||a.room-b.room); }
   const fmtTs = ts => fmt(iso(new Date(ts)));
   const nightsTxt = n => n+" "+(n===1?T("nightWord"):T("nightsWord"));
   const stayDates = x => fmtTs(x.start)+" → "+(x.end?fmtTs(x.end):T("stillOcc"));
@@ -1160,8 +1260,8 @@
     const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
     ["tabBoard","tabAccounts","addExpHeading","lblExDate","lblExCat","lblExNote","lblExAmount","exAdd",
      "incomeHeading","lblPrice","priceSave","byCatHeading","expListHeading","copySalaries","incomeNote",
-     "accLockTitle","accLockSub","accDeviceNote","accLockBtn","exportHeading","exPdf","exportNote","lblBfPrices"].forEach(k=>set(k,T(k)));
-    set("incomeNote",T("incomeNote")+" "+T("bfNote")); set("bfpSave",T("priceSave"));
+     "accLockTitle","accLockSub","accDeviceNote","accLockBtn","exportHeading","exPdf","exportNote","lblBfPrices","lblXbPrice"].forEach(k=>set(k,T(k)));
+    set("incomeNote",T("incomeNote")+" "+T("bfNote")+" "+T("xbIncNote")); set("bfpSave",T("priceSave")); set("xbPriceSave",T("priceSave"));
     BF_SETS.forEach(s=>set("lblBfp"+s,T("bfSetShort").replace("{n}",s)));
     const pb=document.getElementById("exPdf"); if(pb.disabled) pb.textContent=T("exLoading");
     const xb=document.getElementById("exXlsx"); if(!xb.disabled) xb.textContent=T("exXlsx");
@@ -1180,8 +1280,8 @@
     if(!isOwner) return;
     document.getElementById("accMonth").textContent=monthLabel(accMonth);
     document.getElementById("mNext").disabled = accMonth>=curMonth();
-    const inc=monthIncome(accMonth), exps=monthExpenses(accMonth), bfs=monthBf(accMonth);
-    const bfTotal=bfs.reduce((a,x)=>a+x.amount,0), incTotal=inc.total+bfTotal;
+    const inc=monthIncome(accMonth), exps=monthExpenses(accMonth), bfs=monthBf(accMonth), xbs=monthXb(accMonth);
+    const bfTotal=bfs.reduce((a,x)=>a+x.amount,0), xbTotal=xbs.reduce((a,x)=>a+x.amount,0), incTotal=inc.total+bfTotal+xbTotal;
     const expTotal=exps.reduce((a,e)=>a+(+e.amount||0),0), res=incTotal-expTotal;
     document.getElementById("accSummary").innerHTML=
       '<div class="stat inc"><div class="n money">'+baht(incTotal)+'</div><div class="l">'+T("income")+'</div></div>'
@@ -1190,7 +1290,7 @@
 
     // income detail
     let ih="";
-    if(!inc.nights && !bfs.length) ih='<div class="empty">'+T("noIncome")+'</div>';
+    if(!inc.nights && !bfs.length && !xbs.length) ih='<div class="empty">'+T("noIncome")+'</div>';
     else {
       for(let i=1;i<=ROOM_COUNT;i++){ const n=inc.byRoom[i]; if(!n) continue;
         ih+='<div class="irow"><span>'+T("roomWord")+' '+i+'</span><span class="v">'+n+' '+(n===1?T("nightWord"):T("nightsWord"))+'</span></div>'; }
@@ -1202,11 +1302,18 @@
         ih+='<div class="irow"><span>🍳 '+x.qty+' × '+esc(T("bfSet").replace("{n}",x.set))+' × '
           +(x.price>0?baht(x.price):'<em style="color:var(--occupied)">'+esc(T("noPriceSet"))+'</em>')
           +'</span><span class="v">'+baht(x.qty*x.price)+'</span></div>'; });
+      // extra beds, grouped by price
+      const gx={}; xbs.forEach(x=>{ (gx[x.price]=gx[x.price]||{price:x.price,bn:0}).bn+=x.nights*x.beds; });
+      Object.values(gx).sort((a,b)=>a.price-b.price).forEach(x=>{
+        ih+='<div class="irow"><span>🛏 '+x.bn+' '+esc(T("xbIncLine"))+' × '
+          +(x.price>0?baht(x.price):'<em style="color:var(--occupied)">'+esc(T("noPriceSet"))+'</em>')
+          +'</span><span class="v">'+baht(x.bn*x.price)+'</span></div>'; });
       ih+='<div class="irow total"><span>'+T("totalIncome")+'</span><span class="v">'+baht(incTotal)+'</span></div>';
     }
     document.getElementById("incomeBox").innerHTML=ih;
     const pin=document.getElementById("priceInput"); if(document.activeElement!==pin) pin.value=nightPrice();
     BF_SETS.forEach(s=>{ const el=document.getElementById("bfp"+s); if(document.activeElement!==el) el.value=bfPrice(s)||""; });
+    const xpi=document.getElementById("xbPriceIn"); if(document.activeElement!==xpi) xpi.value=xbPrice()||"";
     renderStayList();
     renderExportRange();
     watchIds(); renderIdList();
@@ -1283,6 +1390,14 @@
     showToast(T("bfPricesSaved")); renderAccounts();
   });
 
+  document.getElementById("xbPriceSave").addEventListener("click",()=>{
+    const v=document.getElementById("xbPriceIn").value.trim(), p=v===""?0:parseAmount(v);
+    if(!(p>=0)){ showToast(T("errPrice")); return; }
+    statsSettings=Object.assign({},statsSettings,{xbedPrice:p});
+    if(statsRef) setDoc(statsRef,{settings:{xbedPrice:p}},{merge:true}).catch(e=>{ console.error(e); showToast(T("saveFail")); });
+    document.getElementById("xbPriceIn").blur(); showToast(T("xbPriceSaved")); renderAccounts();
+  });
+
   document.getElementById("copySalaries").addEventListener("click",()=>{
     const prev=monthExpenses(shiftMonth(accMonth,-1)).filter(e=>e.cat==="salary"); if(!prev.length) return;
     if(!confirm(T("confirmCopy").replace("{n}",prev.length))) return;
@@ -1299,9 +1414,9 @@
      deleted:true. That way no device can count it again (a room that is still
      occupied would otherwise re-add its stay after the 1-hour check), and it is
      left out of income, occupancy statistics and reports. */
-  let staysOpen=false, bfOpen=false;
+  let staysOpen=false, bfOpen=false, xbOpen=false;
   function renderStayList(){
-    const box=document.getElementById("stayBox"); const list=monthStays(accMonth), bl=monthBf(accMonth);
+    const box=document.getElementById("stayBox"); const list=monthStays(accMonth), bl=monthBf(accMonth), xl=monthXb(accMonth);
     let h="";
     if(list.length) h+='<details class="staylist" data-k="stays"'+(staysOpen?" open":"")+'><summary>'+esc(T("staysHeading").replace("{n}",list.length))+'</summary>'
       +'<p class="snote">'+esc(T("stayHint"))+'</p><ul class="ulist">'
@@ -1319,12 +1434,30 @@
         +'<span class="eamt">'+baht(x.amount)+'</span>'
         +'<button class="x" data-delbf="'+esc(x.id)+'" aria-label="delete">×</button></li>').join("")
       +'</ul></details>';
+    if(xl.length) h+='<details class="staylist" data-k="xb"'+(xbOpen?" open":"")+'><summary>🛏 '+esc(T("xbHeading").replace("{n}",xl.length))+'</summary>'
+      +'<p class="snote">'+esc(T("xbHint"))+'</p><ul class="ulist">'
+      +xl.map(x=>'<li class="urow"><span class="edate">'+fmtTs(x.start)+'</span>'
+        +'<div class="uinfo"><div class="r">'+T("roomWord")+' '+x.room+' · '+esc((x.beds===1?T("xbOne"):T("xbMany")).replace("{n}",x.beds))+'</div>'
+        +'<div class="g">'+esc(stayDates(x))+' · '+esc(nightsTxt(x.nights))+' × '+(x.price>0?baht(x.price):esc(T("noPriceSet")))+'</div></div>'
+        +'<span class="eamt">'+baht(x.amount)+'</span>'
+        +'<button class="x" data-delxb="'+esc(x.id)+'" aria-label="delete">×</button></li>').join("")
+      +'</ul></details>';
     box.innerHTML=h;
   }
   const stayBoxEl=document.getElementById("stayBox");
   stayBoxEl.addEventListener("toggle",e=>{ if(e.target.tagName!=="DETAILS") return;
-    if(e.target.dataset.k==="bf") bfOpen=e.target.open; else staysOpen=e.target.open; },true);
+    if(e.target.dataset.k==="bf") bfOpen=e.target.open; else if(e.target.dataset.k==="xb") xbOpen=e.target.open; else staysOpen=e.target.open; },true);
   stayBoxEl.addEventListener("click",e=>{
+    const fx=e.target.closest("[data-delxb]");
+    if(fx){
+      const id=fx.dataset.delxb; const x=monthXb(accMonth).find(b=>b.id===id); if(!x) return;
+      const msg=T("confirmDelXb").replace("{room}",T("roomWord")+" "+x.room).replace("{dates}",stayDates(x))
+        .replace("{amt}",x.beds+" × "+nightsTxt(x.nights)+" × "+baht(x.price)+" = "+baht(x.amount));
+      if(!confirm(msg)) return;
+      const now=Date.now(); writeXb(id,{deleted:true, deletedAt:now, end:xbRecs[id].end||now});
+      const r=state.rooms.find(q=>q.xbed && q.xbed.id===id); if(r){ delete r.xbed; persist(); }   // still on the room: take it off
+      showToast(T("xbDeleted")); renderStats(); return;
+    }
     const fb=e.target.closest("[data-delbf]");
     if(fb){
       const id=fb.dataset.delbf; const x=monthBf(accMonth).find(b=>b.id===id); if(!x) return;
@@ -1374,6 +1507,7 @@
       Object.values(stays).forEach(s=>{ if(s&&s.start&&!s.deleted){ const m=monthKey(s.start); if(m<first) first=m; } });
       Object.values(accData.expenses||{}).forEach(e=>{ if(e&&typeof e.date==="string"){ const m=e.date.slice(0,7); if(m<first) first=m; } });
       Object.values(bfRecs).forEach(b=>{ if(b&&!b.deleted&&typeof b.date==="string"){ const m=b.date.slice(0,7); if(m<first) first=m; } });
+      Object.values(xbRecs).forEach(x=>{ if(xbOn(x)){ const m=monthKey(x.start); if(m<first) first=m; } });
     }
     const out=[]; let k=first; while(k<=last && out.length<240){ out.push(k); k=shiftMonth(k,1); }
     return out;
@@ -1381,7 +1515,7 @@
 
   function buildReport(kind){
     const months=rangeMonths(kind), inRange=new Set(months), now=Date.now();
-    const per={}; months.forEach(m=>per[m]={nights:0,rooms:0,bf:0,exp:0});
+    const per={}; months.forEach(m=>per[m]={nights:0,rooms:0,bf:0,xb:0,exp:0});
     const stayRows=[], byRoom={};
     Object.entries(stays).forEach(([id,s])=>{
       if(!s||!s.start||s.deleted) return;
@@ -1400,6 +1534,13 @@
       const g=bfBySet[x.set]||(bfBySet[x.set]={qty:0,amount:0}); g.qty+=x.qty; g.amount+=x.amount;
     });
     bfRows.sort((a,b)=>a.date.localeCompare(b.date)||a.room-b.room||a.set-b.set);
+    const xbRows=[];
+    Object.entries(xbRecs).forEach(([id,x])=>{
+      if(!xbOn(x)) return; const p=+x.price>0?+x.price:xbPrice(); let k=0;
+      stayNightMonths(x,now).forEach(m=>{ if(inRange.has(m)){ k++; per[m].xb+=p*x.beds; } });
+      if(k) xbRows.push({id, room:x.room, start:x.start, end:x.end||null, beds:+x.beds, nights:k, price:p, amount:k*x.beds*p});
+    });
+    xbRows.sort((a,b)=>a.start-b.start||a.room-b.room);
     const expRows=[], byCat={};
     Object.entries(accData.expenses||{}).forEach(([id,e])=>{
       if(!e||typeof e.date!=="string") return; const m=e.date.slice(0,7); if(!inRange.has(m)) return;
@@ -1408,7 +1549,8 @@
     });
     expRows.sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt-b.createdAt);
     const roomIncome=stayRows.reduce((a,x)=>a+x.amount,0), bfIncome=bfRows.reduce((a,x)=>a+x.amount,0);
-    const income=roomIncome+bfIncome, exp=expRows.reduce((a,x)=>a+x.amount,0);
+    const xbIncome=xbRows.reduce((a,x)=>a+x.amount,0), xbNights=xbRows.reduce((a,x)=>a+x.nights*x.beds,0);
+    const income=roomIncome+bfIncome+xbIncome, exp=expRows.reduce((a,x)=>a+x.amount,0);
     const nights=stayRows.reduce((a,x)=>a+x.nights,0), bfQty=bfRows.reduce((a,x)=>a+x.qty,0);
     const label = kind==="month" ? monthLabel(accMonth)
       : kind==="year" ? yearLabel(accMonth.slice(0,4))
@@ -1416,7 +1558,7 @@
     const tag = kind==="month" ? accMonth : kind==="year" ? accMonth.slice(0,4) : "all";
     const fileName = ("Accounts "+RESORT+" "+tag).replace(/[\\/:*?"<>|]/g,"-");
     const created = new Date().toLocaleString(LOC(),{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
-    return {kind,months,per,stayRows,byRoom,bfRows,bfBySet,expRows,byCat,roomIncome,bfIncome,income,exp,nights,bfQty,
+    return {kind,months,per,stayRows,byRoom,bfRows,bfBySet,xbRows,xbIncome,xbNights,expRows,byCat,roomIncome,bfIncome,income,exp,nights,bfQty,
       result:income-exp,label,fileName,created};
   }
 
@@ -1435,10 +1577,10 @@
       +'<div><span>'+esc(T("rpBreakfast"))+'</span><b>'+R.bfQty+'</b></div></div>';
     if(R.months.length>1){
       h+='<h2>'+esc(T("rpMonthly"))+'</h2><table><thead><tr>'+th("rpMonth")+th("rpNightsCol",1)+th("rpRooms",1)+th("rpBreakfast",1)
-        +th("expenses",1)+th("result",1)+'</tr></thead><tbody>'
+        +th("rpXbed",1)+th("expenses",1)+th("result",1)+'</tr></thead><tbody>'
         +R.months.map(m=>{ const p=R.per[m]; return '<tr><td>'+esc(monthLabel(m))+'</td><td class="n">'+p.nights+'</td>'
-          +td(p.rooms)+td(p.bf)+td(p.exp)+tdS(p.rooms+p.bf-p.exp)+'</tr>'; }).join("")
-        +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.roomIncome)+td(R.bfIncome)+td(R.exp)+tdS(R.result)+'</tr></tbody></table>';
+          +td(p.rooms)+td(p.bf)+td(p.xb)+td(p.exp)+tdS(p.rooms+p.bf+p.xb-p.exp)+'</tr>'; }).join("")
+        +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.roomIncome)+td(R.bfIncome)+td(R.xbIncome)+td(R.exp)+tdS(R.result)+'</tr></tbody></table>';
     }
     const rooms=Object.keys(R.byRoom).map(Number).sort((a,b)=>a-b);
     const sets=Object.keys(R.bfBySet).map(Number).sort((a,b)=>a-b);
@@ -1453,12 +1595,17 @@
           +sets.map(s=>'<tr><td>'+esc(bfName(s))+'</td><td class="n">'+R.bfBySet[s].qty+'</td>'+td(R.bfBySet[s].amount)+'</tr>').join("")
           +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.bfQty+'</td>'+td(R.bfIncome)+'</tr></tbody></table>'
         : none);
+    const xbr={}; R.xbRows.forEach(x=>{ const g=xbr[x.room]||(xbr[x.room]={bn:0,amount:0}); g.bn+=x.nights*x.beds; g.amount+=x.amount; });
+    const xrooms=Object.keys(xbr).map(Number).sort((a,b)=>a-b);
+    const leftXb = xrooms.length ? '<h2>'+esc(T("rpXbed"))+'</h2><table><thead><tr>'+th("rpRoom")+th("rpBedNights",1)+th("rpAmount",1)+'</tr></thead><tbody>'
+          +xrooms.map(r=>'<tr><td>'+esc(T("roomWord"))+' '+r+'</td><td class="n">'+xbr[r].bn+'</td>'+td(xbr[r].amount)+'</tr>').join("")
+          +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.xbNights+'</td>'+td(R.xbIncome)+'</tr></tbody></table>' : '';
     const right='<h2>'+esc(T("byCatHeading"))+'</h2>'+(cats.length
         ? '<table><thead><tr>'+th("rpCategory")+th("rpAmount",1)+th("rpShare",1)+'</tr></thead><tbody>'
           +cats.map(c=>'<tr><td>'+esc(T("cat_"+c))+'</td>'+td(R.byCat[c])+'<td class="n">'+(R.exp?Math.round(R.byCat[c]/R.exp*100):0)+'%</td></tr>').join("")
           +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td>'+td(R.exp)+'<td class="n">100%</td></tr></tbody></table>'
         : none);
-    h+='<div class="two"><div>'+left+'</div><div>'+right+'</div></div>';
+    h+='<div class="two"><div>'+left+leftXb+'</div><div>'+right+'</div></div>';
     h+='<h2>'+esc(T("rpStays"))+'</h2>'+(R.stayRows.length
       ? '<table><thead><tr>'+th("rpCheckIn")+th("rpCheckOut")+th("rpRoom")+th("rpNightsCol",1)+th("rpPrice",1)+th("rpAmount",1)+'</tr></thead><tbody>'
         +R.stayRows.map(x=>'<tr><td>'+esc(fullDate(new Date(x.start)))+'</td><td>'+esc(x.end?fullDate(new Date(x.end)):T("stillOcc"))+'</td><td>'
@@ -1471,6 +1618,11 @@
       +R.bfRows.map(x=>'<tr><td>'+esc(fullDate(dFromIso(x.date)))+'</td><td>'+esc(T("roomWord"))+' '+x.room+'</td><td>'+esc(bfName(x.set))
         +'</td><td class="n">'+x.qty+'</td>'+td(x.price)+td(x.amount)+'</tr>').join("")
       +'<tr class="tot"><td colspan="3">'+esc(T("rpTotal"))+'</td><td class="n">'+R.bfQty+'</td><td></td>'+td(R.bfIncome)+'</tr></tbody></table>';
+    if(R.xbRows.length) h+='<h2>'+esc(T("rpXbed"))+'</h2>'
+      +'<table><thead><tr>'+th("rpCheckIn")+th("rpCheckOut")+th("rpRoom")+th("rpBeds",1)+th("rpNightsCol",1)+th("rpPrice",1)+th("rpAmount",1)+'</tr></thead><tbody>'
+      +R.xbRows.map(x=>'<tr><td>'+esc(fullDate(new Date(x.start)))+'</td><td>'+esc(x.end?fullDate(new Date(x.end)):T("stillOcc"))+'</td><td>'
+        +esc(T("roomWord"))+' '+x.room+'</td><td class="n">'+x.beds+'</td><td class="n">'+x.nights+'</td>'+td(x.price)+td(x.amount)+'</tr>').join("")
+      +'<tr class="tot"><td colspan="5">'+esc(T("rpTotal"))+'</td><td></td>'+td(R.xbIncome)+'</tr></tbody></table>';
     h+='<h2>'+esc(T("expenses"))+'</h2>'+(R.expRows.length
       ? '<table><thead><tr>'+th("rpDate")+th("rpCategory")+th("rpNote")+th("rpAmount",1)+'</tr></thead><tbody>'
         +R.expRows.map(e=>'<tr><td>'+esc(fullDate(dFromIso(e.date)))+'</td><td>'+esc(T("cat_"+e.cat))+'</td><td>'+esc(e.note)+'</td>'+td(e.amount)+'</tr>').join("")
@@ -1607,20 +1759,22 @@
     s.push([]);                                          // 4
     s.push([T("rpRoomIncome"), xm(R.roomIncome)]);       // 5
     s.push([T("rpBreakfast"), xm(R.bfIncome)]);          // 6
-    s.push([T("income"), xf("B5+B6", R.income)]);        // 7
-    s.push([T("expenses"), xm(R.exp)]);                  // 8
-    s.push([T("result"), xf("B7-B8", R.result)]);        // 9
-    s.push([T("rpNights"), R.nights]);                   // 10
-    s.push([T("rpBreakfast")+" ("+T("rpQty")+")", R.bfQty]); // 11
+    s.push([T("rpXbed"), xm(R.xbIncome)]);               // 7
+    s.push([T("income"), xf("B5+B6+B7", R.income)]);     // 8
+    s.push([T("expenses"), xm(R.exp)]);                  // 9
+    s.push([T("result"), xf("B8-B9", R.result)]);        // 10
+    s.push([T("rpNights"), R.nights]);                   // 11
+    s.push([T("rpBreakfast")+" ("+T("rpQty")+")", R.bfQty]); // 12
+    s.push([T("rpXbed")+" ("+T("rpBedNights")+")", R.xbNights]); // 13
     s.push([]);
     s.push([T("rpMonthly")]);
-    s.push([T("rpMonth"), T("rpNightsCol"), T("rpRooms"), T("rpBreakfast"), T("expenses"), T("result")]);
+    s.push([T("rpMonth"), T("rpNightsCol"), T("rpRooms"), T("rpBreakfast"), T("rpXbed"), T("expenses"), T("result")]);
     const m0=s.length+1;
     R.months.forEach(m=>{ const p=R.per[m]; const r=s.length+1;
-      s.push([monthLabel(m), p.nights, xm(p.rooms), xm(p.bf), xm(p.exp), xf("C"+r+"+D"+r+"-E"+r, p.rooms+p.bf-p.exp)]); });
+      s.push([monthLabel(m), p.nights, xm(p.rooms), xm(p.bf), xm(p.xb), xm(p.exp), xf("C"+r+"+D"+r+"+E"+r+"-F"+r, p.rooms+p.bf+p.xb-p.exp)]); });
     const m1=s.length;
     s.push([T("rpTotal"), xn("SUM(B"+m0+":B"+m1+")",R.nights), xf("SUM(C"+m0+":C"+m1+")",R.roomIncome),
-      xf("SUM(D"+m0+":D"+m1+")",R.bfIncome), xf("SUM(E"+m0+":E"+m1+")",R.exp), xf("SUM(F"+m0+":F"+m1+")",R.result)]);
+      xf("SUM(D"+m0+":D"+m1+")",R.bfIncome), xf("SUM(E"+m0+":E"+m1+")",R.xbIncome), xf("SUM(F"+m0+":F"+m1+")",R.exp), xf("SUM(G"+m0+":G"+m1+")",R.result)]);
     s.push([]);
     s.push([T("byCatHeading")]);
     s.push([T("rpCategory"), T("rpAmount")]);
@@ -1662,6 +1816,12 @@
     const nb=bf.length;
     bf.push([T("rpTotal"), "", "", nb>1?xn("SUM(D2:D"+nb+")",R.bfQty):0, "", nb>1?xf("SUM(F2:F"+nb+")",R.bfIncome):xm(0)]);
 
+    // Extra beds (one row per bed period)
+    const xb=[[T("rpCheckIn"), T("rpCheckOut"), T("rpRoom"), T("rpBeds"), T("rpNightsCol"), T("rpPrice"), T("rpAmount")]];
+    R.xbRows.forEach(x=>xb.push([xd(new Date(x.start)), x.end?xd(new Date(x.end)):T("stillOcc"), T("roomWord")+" "+x.room, x.beds, x.nights, xm(x.price), xm(x.amount)]));
+    const nx=xb.length;
+    xb.push([T("rpTotal"), "", "", "", "", "", nx>1?xf("SUM(G2:G"+nx+")",R.xbIncome):xm(0)]);
+
     // Expenses
     const ex=[[T("rpDate"), T("rpCategory"), T("rpNote"), T("rpAmount")]];
     R.expRows.forEach(e=>ex.push([xd(dFromIso(e.date)), T("cat_"+e.cat), e.note, xm(e.amount)]));
@@ -1669,9 +1829,10 @@
     ex.push([T("rpTotal"), "", "", ne>1?xf("SUM(D2:D"+ne+")",R.exp):xm(0)]);
 
     const wb=X.utils.book_new();
-    X.utils.book_append_sheet(wb, mkSheet(X,s,[30,14,16,16,16,16]), T("sheetSummary"));
+    X.utils.book_append_sheet(wb, mkSheet(X,s,[30,14,16,16,16,16,16]), T("sheetSummary"));
     X.utils.book_append_sheet(wb, mkSheet(X,inc,[15,15,12,9,13,14]), T("sheetIncome"));
     X.utils.book_append_sheet(wb, mkSheet(X,bf,[15,12,22,8,13,14]), T("sheetBreakfast"));
+    X.utils.book_append_sheet(wb, mkSheet(X,xb,[15,15,12,8,9,13,14]), T("sheetXbed"));
     X.utils.book_append_sheet(wb, mkSheet(X,ex,[15,26,34,14]), T("sheetExpenses"));
     return wb;
   }
@@ -1999,10 +2160,12 @@
     const err=document.getElementById("idErr"), btn=document.getElementById("idSaveBtn"); err.textContent="";
     if(idEditing && idSrc){ idQuad=orderQuad(idQuad); idShowResult(); }   // save what the corners show
     if(!idData){ err.textContent=T("idNoPhoto"); return; }
+    const phone=document.getElementById("idGuestIn").value.trim().slice(0,40);
+    if((phone.match(/\d/g)||[]).length<9){ err.textContent=T("idPhoneErr"); document.getElementById("idGuestIn").focus(); return; }
     if(!db){ err.textContent=T("idFail"); return; }
     if(idBusy) return; idBusy=true; btn.disabled=true; btn.textContent=T("idSaving");
     const now=Date.now(), id="g"+now.toString(36)+Math.random().toString(36).slice(2,6), room=idRoom;
-    const guest=document.getElementById("idGuestIn").value.trim().slice(0,80);
+    const guest=phone;   // the phone number is stored in the "guest" field (so the Firebase rules stay the same)
     try{
       const b=writeBatch(db);
       b.set(doc(db,"guestIdImg",id), {img:idData.img});
@@ -2036,7 +2199,7 @@
     box.innerHTML = idList.length ? idList.map(x=>{ const d=new Date(x.takenAt||0);
         const tm=d.toLocaleTimeString(LOC(),{hour:"2-digit",minute:"2-digit"});
         return '<li class="urow idrow" data-viewid="'+esc(x.id)+'"><span class="edate">'+esc(fmt(x.date||iso(d)))+'</span>'
-          +'<div class="uinfo"><div class="r">'+esc(T("roomWord")+" "+x.room)+(x.guest?' · '+esc(x.guest):'')+'</div>'
+          +'<div class="uinfo"><div class="r">'+esc(T("roomWord")+" "+x.room)+(x.guest?' · 📞 '+esc(x.guest):'')+'</div>'
           +'<div class="g">'+esc(tm)+' · '+esc(T("idOpen"))+'</div></div>'
           +'<button class="x" data-delid="'+esc(x.id)+'" aria-label="delete">×</button></li>'; }).join("")
       : '<li class="empty">'+esc(T("idNone"))+'</li>';
@@ -2059,7 +2222,9 @@
     img.removeAttribute("src"); document.getElementById("idCap").textContent=T("idProcessing"); v.classList.add("on"); idViewing=x;
     try{ const s=await getDoc(doc(db,"guestIdImg",x.id)); if(idViewing!==x) return;
       if(!s.exists()) throw new Error("missing"); img.src=s.data().img;
-      document.getElementById("idCap").textContent=T("roomWord")+" "+x.room+(x.guest?" · "+x.guest:"")+" · "+fmt(x.date||iso(new Date(x.takenAt))); }
+      const tel=(x.guest||"").replace(/[^\d+]/g,"");
+      document.getElementById("idCap").innerHTML=esc(T("roomWord")+" "+x.room)+(x.guest?' · <a href="tel:'+esc(tel)+'" style="color:#9cc3ff">📞 '+esc(x.guest)+'</a>':'')
+        +' · '+esc(fmt(x.date||iso(new Date(x.takenAt)))); }
     catch(er){ console.error(er); if(idViewing===x){ closeView(); showToast(T("idLoadFail")); } }
   });
   function closeView(){ document.getElementById("idView").classList.remove("on"); document.getElementById("idImg").removeAttribute("src"); idViewing=null; }
@@ -2158,6 +2323,7 @@
       stays = (data && data.stays && typeof data.stays==="object") ? data.stays : {};
       statsSettings = (data && data.settings && typeof data.settings==="object") ? data.settings : {};
       bfRecs = (data && data.breakfasts && typeof data.breakfasts==="object") ? data.breakfasts : {};
+      xbRecs = (data && data.xbeds && typeof data.xbeds==="object") ? data.xbeds : {};
       statsReady=true;
       if(reconcile()) persist(); else renderStats();
     }, err=>{ console.error("stats:",err); });
