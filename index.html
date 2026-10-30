@@ -193,8 +193,16 @@
   .staylist summary{cursor:pointer;font-weight:600;font-size:.9rem;padding:4px 0}
   .staylist .snote{margin:6px 0 0}
   .staylist .ulist{margin-top:10px}
-  /* printable report (only visible when printing / saving as PDF) */
-  #printReport{display:none}
+  /* A4 PDF: report pages are laid out here (hidden behind the "Creating PDF" cover), photographed and put in the PDF */
+  #pdfStage{position:fixed;left:0;top:0;z-index:150;display:none}
+  #pdfStage.on{display:block}
+  .pdfpage{width:794px;height:1123px;padding:42px 45px 0;background:#fff;position:relative;box-sizing:border-box;overflow:hidden;margin-bottom:10px}
+  .pdfpage .pgc{height:1021px;overflow:hidden}
+  .pdfpage .pgc>*:first-child{margin-top:0}
+  .pdfpage .pgfoot{position:absolute;left:45px;right:45px;bottom:26px;display:flex;justify-content:space-between;font-size:8pt;color:#777;border-top:1px solid #ddd;padding-top:6px}
+  .pdfpage *{letter-spacing:0!important}
+  #pdfBusy{position:fixed;inset:0;z-index:200;background:var(--mist);display:none;align-items:center;justify-content:center;font-family:var(--disp);font-weight:600;font-size:1.05rem;color:var(--ink)}
+  #pdfBusy.on{display:flex}
   .rp{font-family:var(--body);color:#111;font-size:10pt;line-height:1.35}
   .rp h1{font-family:var(--disp);font-size:18pt;margin:0}
   .rp .rpsub{color:#555;margin:3px 0 14px}
@@ -215,14 +223,39 @@
   .rp tr{break-inside:avoid;page-break-inside:avoid}
   .rp .two{display:flex;gap:18px;align-items:flex-start}.rp .two>div{flex:1}
   .rp .empty{color:#777;padding:4px 0}
-  @media print{
-    @page{size:A4;margin:14mm 12mm}
-    html,body{background:#fff!important}
-    body{padding:0}
-    .wrap,.lock,.scrim,#toasts{display:none!important}
-    #printReport{display:block!important}
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  }
+  /* ---- breakfast ---- */
+  .pips{position:absolute;top:12px;right:12px;display:flex;gap:5px;pointer-events:none}
+  .pips .pip{position:static}
+  .pip.bfpip{background:#f6c026}
+  .room.is-arrive .pip.bfpip{background:#f6c026;border-color:#fff}
+  .bfchip{position:relative;z-index:1;margin-top:9px;background:#fff6d6;color:#5a4300;border-radius:10px;padding:7px 10px;font-size:.82rem;line-height:1.35}
+  .bfchip .bfh{font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:#8a6500;margin-bottom:2px}
+  .bfchip .bfl{font-weight:600}
+  .room-actions+.room-actions{border-top:1px solid var(--line)}
+  .mini.bf{color:#9a6a00}
+  .bfcard{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-left:5px solid #f6c026;border-radius:16px;box-shadow:var(--shadow);padding:14px}
+  .bfcard h2{font-family:var(--disp);font-size:1rem;font-weight:600;margin:0 0 4px;color:var(--ink)}
+  .bfday{padding:10px 0;border-top:1px solid var(--line)}
+  .bfday:first-of-type{border-top:0}
+  .bfday .dh{font-weight:700;font-size:.86rem;color:var(--muted);margin-bottom:6px}
+  .bfday.today .dh{color:#8a6500}
+  .bftot{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .bftot span{background:#fff6d6;color:#5a4300;border:1px solid #f1df9e;border-radius:999px;padding:5px 11px;font-weight:700;font-size:.9rem}
+  .bfday.today .bftot span{font-size:1.05rem;padding:6px 13px}
+  .bfrooms{font-size:.84rem;color:var(--ink)}
+  .bfrooms div{padding:2px 0}
+  .bfrooms b{font-weight:700}
+  .steprow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .steprow:last-of-type{border-bottom:0;margin-bottom:12px}
+  .steprow .sn{font-weight:600}
+  .stepper{display:flex;align-items:center;gap:8px}
+  .stepper button{appearance:none;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:#fbfcfb;font-size:1.3rem;font-weight:600;color:var(--ink);cursor:pointer;line-height:1}
+  .stepper button:active{background:#eef1ef}
+  .stepper .q{min-width:28px;text-align:center;font-family:var(--disp);font-weight:700;font-size:1.25rem}
+  .stepper .q.zero{color:#b9c1bc}
+  .bfprices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .bfprices input{width:100%;font-family:inherit;font-size:1rem;padding:11px 10px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb;min-width:0}
+  .bfprices label{font-size:.7rem}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 </head>
@@ -267,6 +300,8 @@
 
   <div id="pageBoard">
   <section class="summary" id="summary"></section>
+
+  <section class="bfcard" id="bfCard"></section>
 
   <div class="toolbar">
     <h2 id="roomsHeading">Rooms</h2>
@@ -317,7 +352,7 @@
     <section class="card">
       <h2 id="exportHeading">Report</h2>
       <div class="rangetog" id="exRange"></div>
-      <div class="exbtns"><button class="btn" id="exPdf">PDF / Print</button><button class="btn" id="exXlsx">Excel</button></div>
+      <div class="exbtns"><button class="btn" id="exPdf">PDF</button><button class="btn" id="exXlsx">Excel</button></div>
       <p class="snote" id="exportNote"></p>
     </section>
 
@@ -339,6 +374,17 @@
       <div class="pricerow">
         <label for="priceInput" id="lblPrice">Price per night (฿)</label>
         <div class="pricein"><input type="text" inputmode="numeric" id="priceInput"><button class="btn" id="priceSave">Save</button></div>
+      </div>
+      <div class="pricerow">
+        <label id="lblBfPrices">Breakfast prices (฿)</label>
+        <div class="pricein">
+          <div class="bfprices" style="flex:1">
+            <div><label for="bfp1" id="lblBfp1">Set 1</label><input type="text" inputmode="numeric" id="bfp1"></div>
+            <div><label for="bfp2" id="lblBfp2">Set 2</label><input type="text" inputmode="numeric" id="bfp2"></div>
+            <div><label for="bfp3" id="lblBfp3">Set 3</label><input type="text" inputmode="numeric" id="bfp3"></div>
+          </div>
+          <button class="btn" id="bfpSave" style="align-self:flex-end;height:46px">Save</button>
+        </div>
       </div>
       <p class="snote" id="incomeNote"></p>
       <div id="stayBox"></div>
@@ -376,8 +422,23 @@
   </div>
 </div>
 
+<div class="scrim" id="bfScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bfTitle">
+    <h3 id="bfTitle">Breakfast</h3>
+    <p class="sub" id="bfSub"></p>
+    <label for="bfDate" id="bfLblDate">Breakfast date</label>
+    <input type="date" id="bfDate">
+    <div id="bfSteps"></div>
+    <div class="sheet-actions">
+      <button class="btn" id="bfCancel">Cancel</button>
+      <button class="btn primary" id="bfSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
-<div id="printReport" class="rp"></div>
+<div id="pdfStage"></div>
+<div id="pdfBusy"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -423,7 +484,7 @@
       noBookings:"No bookings yet. Use \u201CBook future date\u201D on any room to add one.",
       sheetTitle:"Book a room", labelDate:"Arrival date", labelGuest:"Guest name (optional)",
       cancel:"Cancel", saveBooking:"Save booking", guestPlaceholder:"e.g. Dana",
-      footer:"Hold a room to switch Free / Occupied · Blue dot = future booking · Rooms turn blue on arrival day · Synced to every device",
+      footer:"Hold a room to switch Free / Occupied · Yellow dot = breakfast ordered · Blue dot = future booking · Rooms turn blue on arrival day · Synced to every device",
       syncOk:"Synced", syncConnecting:"Connecting…", syncSignin:"Signing in…", syncOffline:"Offline",
       syncSaveFail:"Save failed — retry", syncNotConfigured:"Not configured", syncConfigError:"Config error", syncAuthFail:"Sign-in failed",
       lockTitle:"Front Desk Access", lockSub:"Enter the staff passcode to open the room board.",
@@ -459,8 +520,19 @@
       accNotSetup:"Accounts login is not set up in Firebase yet (Email/Password sign-in and the owner user).",
       accDeviceNote:"Accounts are unlocked on this device.", accLockBtn:"Lock this device",
       confirmLock:"Lock Accounts on this device? You will need the code to open it again.", accLocked:"Accounts locked on this device",
-      exportHeading:"Report", rangeAll:"All", exPdf:"PDF / Print", exXlsx:"Excel", exLoading:"Preparing…",
-      exportNote:"PDF opens the print window — choose “Save as PDF”. Excel downloads a file with Summary, Income and Expenses sheets.",
+      exportHeading:"Report", rangeAll:"All", exPdf:"PDF", exXlsx:"Excel", exLoading:"Preparing…",
+      exportNote:"PDF downloads an A4 report. Excel downloads a file with Summary, Income, Breakfast and Expenses sheets.",
+      pdfBusy:"Creating PDF…", pdfFail:"Could not create the PDF — check the connection and try again.", rpPage:"Page",
+      addBreakfast:"+ Breakfast", bfTitle:"Breakfast", bfLblDate:"Breakfast date", bfSet:"Breakfast set {n}", bfSetShort:"Set {n}",
+      bfToday:"Breakfast today", bfTomorrow:"Breakfast tomorrow", bfOn:"Breakfast {d}",
+      bfCardTitle:"🍳 Breakfast", bfNone:"No breakfast orders.", bfTodayDay:"Today", bfTomorrowDay:"Tomorrow",
+      bfSaved:"Breakfast saved", bfUpdated:"Breakfast updated",
+      lblBfPrices:"Breakfast prices (฿)", bfPricesSaved:"Breakfast prices saved", noPriceSet:"price not set",
+      bfNote:"Breakfast income = sets ordered × price of the set. A price change applies to new orders only.",
+      bfHeading:"Breakfasts this month ({n})", bfHint:"Tap × to delete a breakfast order that was entered by mistake.",
+      confirmDelBf:"Delete this breakfast?\n\n{room} · {date}\n{amt}", bfDeleted:"Breakfast deleted",
+      rpRoomIncome:"Room income", rpBreakfast:"Breakfast", rpBfOrders:"Breakfast orders", rpSet:"Set", rpQty:"Qty", rpUnitPrice:"Price",
+      rpRooms:"Rooms", sheetBreakfast:"Breakfast",
       exFail:"Could not create the Excel file — check the connection and try again.",
       rpTitle:"Accounts report", rpPeriod:"Period", rpGenerated:"Created", rpNights:"Room nights",
       rpMonthly:"Monthly overview", rpMonth:"Month", rpByRoom:"Income by room", rpRoom:"Room", rpStays:"Room stays",
@@ -481,7 +553,7 @@
       noBookings:"ยังไม่มีการจอง แตะ \u201Cจองวันที่ล่วงหน้า\u201D ที่ห้องใดก็ได้เพื่อเพิ่ม",
       sheetTitle:"จองห้องพัก", labelDate:"วันที่เข้าพัก", labelGuest:"ชื่อผู้เข้าพัก (ไม่บังคับ)",
       cancel:"ยกเลิก", saveBooking:"บันทึกการจอง", guestPlaceholder:"เช่น สมหญิง",
-      footer:"กดห้องค้างไว้เพื่อสลับ ว่าง / ไม่ว่าง · จุดสีน้ำเงิน = การจองล่วงหน้า · ห้องจะเป็นสีน้ำเงินในวันเข้าพัก · ซิงค์ทุกอุปกรณ์",
+      footer:"กดห้องค้างไว้เพื่อสลับ ว่าง / ไม่ว่าง · จุดสีเหลือง = สั่งอาหารเช้าแล้ว · จุดสีน้ำเงิน = การจองล่วงหน้า · ห้องจะเป็นสีน้ำเงินในวันเข้าพัก · ซิงค์ทุกอุปกรณ์",
       syncOk:"ซิงค์แล้ว", syncConnecting:"กำลังเชื่อมต่อ…", syncSignin:"กำลังเข้าสู่ระบบ…", syncOffline:"ออฟไลน์",
       syncSaveFail:"บันทึกไม่สำเร็จ — ลองใหม่", syncNotConfigured:"ยังไม่ได้ตั้งค่า", syncConfigError:"ตั้งค่าผิดพลาด", syncAuthFail:"เข้าสู่ระบบไม่สำเร็จ",
       lockTitle:"เข้าสู่แผนกต้อนรับ", lockSub:"ใส่รหัสผ่านพนักงานเพื่อเปิดกระดานห้องพัก",
@@ -517,8 +589,19 @@
       accNotSetup:"ยังไม่ได้ตั้งค่าการเข้าสู่ระบบบัญชีใน Firebase",
       accDeviceNote:"บัญชีปลดล็อกอยู่บนอุปกรณ์นี้", accLockBtn:"ล็อกอุปกรณ์นี้",
       confirmLock:"ล็อกบัญชีบนอุปกรณ์นี้? ต้องใช้รหัสเพื่อเปิดอีกครั้ง", accLocked:"ล็อกบัญชีบนอุปกรณ์นี้แล้ว",
-      exportHeading:"รายงาน", rangeAll:"ทั้งหมด", exPdf:"PDF / พิมพ์", exXlsx:"Excel", exLoading:"กำลังเตรียม…",
-      exportNote:"PDF จะเปิดหน้าต่างพิมพ์ — เลือก “บันทึกเป็น PDF”  Excel จะดาวน์โหลดไฟล์ที่มีแผ่นงาน สรุป รายรับ และรายจ่าย",
+      exportHeading:"รายงาน", rangeAll:"ทั้งหมด", exPdf:"PDF", exXlsx:"Excel", exLoading:"กำลังเตรียม…",
+      exportNote:"PDF จะดาวน์โหลดรายงานขนาด A4  Excel จะดาวน์โหลดไฟล์ที่มีแผ่นงาน สรุป รายรับ อาหารเช้า และรายจ่าย",
+      pdfBusy:"กำลังสร้าง PDF…", pdfFail:"สร้าง PDF ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อแล้วลองใหม่", rpPage:"หน้า",
+      addBreakfast:"+ อาหารเช้า", bfTitle:"อาหารเช้า", bfLblDate:"วันที่รับอาหารเช้า", bfSet:"อาหารเช้าชุดที่ {n}", bfSetShort:"ชุดที่ {n}",
+      bfToday:"อาหารเช้าวันนี้", bfTomorrow:"อาหารเช้าพรุ่งนี้", bfOn:"อาหารเช้า {d}",
+      bfCardTitle:"🍳 อาหารเช้า", bfNone:"ยังไม่มีการสั่งอาหารเช้า", bfTodayDay:"วันนี้", bfTomorrowDay:"พรุ่งนี้",
+      bfSaved:"บันทึกอาหารเช้าแล้ว", bfUpdated:"อาหารเช้ามีการเปลี่ยนแปลง",
+      lblBfPrices:"ราคาอาหารเช้า (฿)", bfPricesSaved:"บันทึกราคาอาหารเช้าแล้ว", noPriceSet:"ยังไม่ได้ตั้งราคา",
+      bfNote:"รายรับอาหารเช้า = จำนวนชุดที่สั่ง × ราคาชุด การเปลี่ยนราคามีผลกับรายการใหม่เท่านั้น",
+      bfHeading:"อาหารเช้าเดือนนี้ ({n})", bfHint:"แตะ × เพื่อลบรายการอาหารเช้าที่ใส่ผิด",
+      confirmDelBf:"ลบอาหารเช้านี้?\n\n{room} · {date}\n{amt}", bfDeleted:"ลบอาหารเช้าแล้ว",
+      rpRoomIncome:"รายรับห้องพัก", rpBreakfast:"อาหารเช้า", rpBfOrders:"รายการอาหารเช้า", rpSet:"ชุด", rpQty:"จำนวน", rpUnitPrice:"ราคา",
+      rpRooms:"ห้องพัก", sheetBreakfast:"อาหารเช้า",
       exFail:"สร้างไฟล์ Excel ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อแล้วลองใหม่",
       rpTitle:"รายงานบัญชี", rpPeriod:"ช่วงเวลา", rpGenerated:"สร้างเมื่อ", rpNights:"จำนวนคืนที่เข้าพัก",
       rpMonthly:"สรุปรายเดือน", rpMonth:"เดือน", rpByRoom:"รายรับตามห้อง", rpRoom:"ห้อง", rpStays:"รายการเข้าพัก",
@@ -546,7 +629,7 @@
   const defaultState = () => { const rooms=[]; for(let i=1;i<=ROOM_COUNT;i++) rooms.push({id:i,status:"free",bookings:[]}); return {rooms}; };
   let state = defaultState();
   let db=null, ref=null, ready=false, firstSnap=true;
-  let prevView = {};
+  let prevView = {}, prevBf = {};
   let syncCls="wait", syncKeyName="syncConnecting";
 
   /* ---------------- occupancy statistics ----------------
@@ -567,6 +650,26 @@
   const newStayId = () => "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const inGrace = r => r.status==="occupied" && r.occSince && (Date.now()-r.occSince) < GRACE_MS;
   const minsLeft = r => Math.max(1, Math.ceil((GRACE_MS-(Date.now()-r.occSince))/60000));
+
+  /* ---------------- breakfast ----------------
+     Orders live on the room (board/main: room.breakfast = [{id,date,set,qty}]) so every device — and the chef —
+     sees them at once. A copy goes to the statistics document (board/stats -> breakfasts:{id:{room,date,month,set,qty,price}})
+     for the accounts; that copy stays after the date has passed. One record per room + date + set.
+     Removing an order marks the copy deleted:true (same as room stays). */
+  const BF_SETS=[1,2,3];
+  let bfRecs={};
+  const bfId = (room,date,set) => "f"+date.replace(/-/g,"")+"r"+room+"s"+set;
+  const bfPrice = set => { const o=statsSettings.bfPrice; return o && +o[set]>0 ? +o[set] : 0; };
+  function writeBf(id, data){
+    bfRecs[id] = Object.assign({}, bfRecs[id]||{}, data);
+    if(!statsRef) return;
+    setDoc(statsRef, {breakfasts:{[id]:data}}, {merge:true}).catch(e=>{ console.error(e); setSync("off","syncSaveFail"); });
+  }
+  const roomBf = r => (r.breakfast||[]).filter(b=>b && b.qty>0 && typeof b.date==="string");
+  const nextBfDate = r => roomBf(r).map(b=>b.date).filter(d=>d>=todayStr()).sort()[0] || null;
+  const bfSig = r => roomBf(r).map(b=>b.date+":"+b.set+":"+b.qty).sort().join("|");
+  const bfRow = (id,b) => { const p = +b.price>0 ? +b.price : bfPrice(b.set);
+    return {id, room:b.room, date:b.date, set:+b.set, qty:+b.qty, price:p, amount:p*b.qty}; };
 
   function writeStay(id, data){
     stays[id] = Object.assign({}, stays[id]||{}, data);
@@ -608,6 +711,9 @@
         open.forEach(([id])=>writeStay(id,{end:now}));
       }
     });
+    // breakfast orders on the board that have no accounts copy yet (e.g. a failed save) get one
+    state.rooms.forEach(r=>roomBf(r).forEach(b=>{ const id=bfId(r.id,b.date,b.set);
+      if(!bfRecs[id]) writeBf(id,{room:r.id, date:b.date, month:b.date.slice(0,7), set:b.set, qty:b.qty, deleted:false, price:bfPrice(b.set)}); }));
     if(confirmStays()) renderStats();
     return ch;
   }
@@ -649,7 +755,9 @@
 
   function purgePast(){ const t=todayStr(); let ch=false;
     state.rooms.forEach(r=>{ const n=(r.bookings||[]).length; r.bookings=(r.bookings||[]).filter(b=>b.date>=t);
-      if(r.bookings.length!==n) ch=true; }); return ch; }
+      if(r.bookings.length!==n) ch=true;
+      if(r.breakfast){ const m=r.breakfast.length; r.breakfast=r.breakfast.filter(b=>b && b.date>=t);   // accounts copy is kept
+        if(r.breakfast.length!==m) ch=true; } }); return ch; }
 
   async function persist(){ render();
     if(!ready||!ref) return;
@@ -665,6 +773,8 @@
     set("lockTitle",T("lockTitle")); set("lockSub",T("lockSub")); set("unlockBtn",T("lockBtn"));
     set("sheetTitle",T("sheetTitle")); set("labelDate",T("labelDate")); set("labelGuest",T("labelGuest"));
     set("bcancel",T("cancel")); set("bsave",T("saveBooking"));
+    set("bfTitle",T("bfTitle")); set("bfLblDate",T("bfLblDate")); set("bfCancel",T("cancel")); set("bfSave",T("priceSave"));
+    set("pdfBusy",T("pdfBusy"));
     const bg=document.getElementById("bguest"); if(bg) bg.placeholder=T("guestPlaceholder");
     document.querySelectorAll("#langTog .seg").forEach(b=>b.classList.toggle("active", b.dataset.lang===lang));
     setSync(syncCls,syncKeyName);
@@ -682,16 +792,23 @@
       if(nb){ const who=nb.guest?(" · "+esc(nb.guest)):""; const tag=nb.date===todayStr()?T("todayWord"):fmt(nb.date);
         nextHtml='<div class="next">'+T("nextArrival")+tag+who+'</div>'; }
       if(inGrace(r)) nextHtml='<div class="next">⏳ '+T("countsInTile").replace("{m}",minsLeft(r))+'</div>'+nextHtml;
-      const pip=hasFuturePip(r)?'<span class="pip"></span>':'';
+      const bd=nextBfDate(r); let bfHtml="";
+      if(bd){ const items=roomBf(r).filter(b=>b.date===bd).sort((a,b)=>a.set-b.set);
+        const h = bd===todayStr() ? T("bfToday") : bd===tomorrowStr() ? T("bfTomorrow") : T("bfOn").replace("{d}",fmt(bd));
+        bfHtml='<div class="bfchip"><div class="bfh">🍳 '+esc(h)+'</div>'
+          +items.map(b=>'<div class="bfl">'+esc(b.qty+" × "+T("bfSet").replace("{n}",b.set))+'</div>').join("")+'</div>'; }
+      const pips=(bd?'<span class="pip bfpip"></span>':'')+(hasFuturePip(r)?'<span class="pip"></span>':'');
+      const pip=pips?'<span class="pips">'+pips+'</span>':'';
       const hint=vs==="occupied"?T("tapFree"):T("tapOcc");
       const card=document.createElement("div");
       card.className="room"+(vs==="arrive"?" is-arrive":"");
       card.innerHTML=
         '<button class="face '+vs+'" data-toggle="'+r.id+'" aria-label="'+T("roomWord")+' '+r.id+', '+label+'">'
         +'<div class="rline"><span class="rnum">'+r.id+'</span><span class="rname">'+T("roomWord")+' '+r.id+'</span></div>'
-        +'<div class="status">'+label+'</div>'+nextHtml
+        +'<div class="status">'+label+'</div>'+nextHtml+bfHtml
         +'<div class="hint">'+hint+'</div></button>'+pip
-        +'<div class="room-actions"><button class="mini book" data-book="'+r.id+'">'+T("bookFuture")+'</button></div>';
+        +'<div class="room-actions"><button class="mini book" data-book="'+r.id+'">'+T("bookFuture")+'</button></div>'
+        +'<div class="room-actions"><button class="mini bf" data-bf="'+r.id+'">'+esc(T("addBreakfast"))+'</button></div>';
       grid.appendChild(card);
     });
     document.getElementById("summary").innerHTML=
@@ -699,7 +816,28 @@
       +'<div class="stat occ"><div class="n">'+occ+'</div><div class="l">'+T("occupied")+'</div></div>'
       +'<div class="stat arr"><div class="n">'+arr+'</div><div class="l">'+T("arrive")+'</div></div>';
     renderUpcoming();
+    renderBfCard();
     renderStats();
+  }
+
+  /* breakfast overview for the kitchen: totals per set per day, then which room */
+  function renderBfCard(){
+    const el=document.getElementById("bfCard"); const t=todayStr(), tm=tomorrowStr(); const byDate={};
+    state.rooms.forEach(r=>roomBf(r).forEach(b=>{ if(b.date>=t) (byDate[b.date]=byDate[b.date]||[]).push({room:r.id,set:b.set,qty:b.qty}); }));
+    const dates=Object.keys(byDate).sort();
+    let h='<h2>'+esc(T("bfCardTitle"))+'</h2>';
+    if(!dates.length) h+='<div class="empty" style="padding:4px 0 0">'+esc(T("bfNone"))+'</div>';
+    dates.forEach(d=>{
+      const list=byDate[d], tot={}, rooms={};
+      list.forEach(b=>{ tot[b.set]=(tot[b.set]||0)+b.qty; (rooms[b.room]=rooms[b.room]||[]).push(b); });
+      const dh = d===t ? T("bfTodayDay")+" · "+fmt(d) : d===tm ? T("bfTomorrowDay")+" · "+fmt(d) : fmt(d);
+      h+='<div class="bfday'+(d===t?" today":"")+'"><div class="dh">'+esc(dh)+'</div>'
+        +'<div class="bftot">'+BF_SETS.filter(s=>tot[s]).map(s=>'<span>'+esc(tot[s]+" × "+T("bfSet").replace("{n}",s))+'</span>').join("")+'</div>'
+        +'<div class="bfrooms">'+Object.keys(rooms).map(Number).sort((a,b)=>a-b).map(rid=>'<div><b>'+esc(T("roomWord")+" "+rid)+':</b> '
+          +esc(rooms[rid].sort((a,b)=>a.set-b.set).map(b=>b.qty+" × "+T("bfSetShort").replace("{n}",b.set)).join(", "))+'</div>').join("")
+        +'</div></div>';
+    });
+    el.innerHTML=h;
   }
 
   function renderStats(){
@@ -757,8 +895,9 @@
   function localSound(r){ const vs=viewStatus(r); if(prevView[r.id]!==vs){ playSound(vs); prevView[r.id]=vs; } }
 
   document.addEventListener("click", e=>{
-    const t=e.target.closest("[data-book],[data-del]"); if(!t) return;
-    if(t.dataset.book){ openSheet(+t.dataset.book); }
+    const t=e.target.closest("[data-book],[data-del],[data-bf]"); if(!t) return;
+    if(t.dataset.bf){ openBf(+t.dataset.bf); }
+    else if(t.dataset.book){ openSheet(+t.dataset.book); }
     else if(t.dataset.del){ const [rid,bid]=t.dataset.del.split(":"); const r=state.rooms.find(x=>x.id===+rid);
       r.bookings=(r.bookings||[]).filter(b=>b.id!==bid); localSound(r); persist(); }
   });
@@ -786,7 +925,56 @@
   document.getElementById("clearAll").addEventListener("click",()=>{
     if(!confirm(T("confirmClear"))) return;
     state.rooms.forEach(r=>{ if(r.status==="occupied") closeStay(r); });  // stays already past 1 h stay counted
-    state=defaultState(); state.rooms.forEach(r=>prevView[r.id]="free"); persist();
+    const keepBf={}; state.rooms.forEach(r=>{ if(r.breakfast && r.breakfast.length) keepBf[r.id]=r.breakfast; });  // breakfast orders are kept
+    state=defaultState(); state.rooms.forEach(r=>{ prevView[r.id]="free"; if(keepBf[r.id]) r.breakfast=keepBf[r.id]; }); persist();
+  });
+
+  /* ---------------- breakfast sheet ---------------- */
+  let bfRoom=null, bfQty={}; const bfScrim=document.getElementById("bfScrim");
+  function bfLoad(){
+    const d=document.getElementById("bfDate").value; const r=state.rooms.find(x=>x.id===bfRoom);
+    bfQty={}; BF_SETS.forEach(s=>{ const b=((r&&r.breakfast)||[]).find(b=>b.date===d && +b.set===s); bfQty[s]=b?+b.qty:0; });
+    bfSteps();
+  }
+  function bfSteps(){
+    document.getElementById("bfSteps").innerHTML=BF_SETS.map(s=>'<div class="steprow"><span class="sn">'+esc(T("bfSet").replace("{n}",s))+'</span>'
+      +'<div class="stepper"><button data-step="'+s+':-1" aria-label="minus">−</button><span class="q'+(bfQty[s]?"":" zero")+'">'+bfQty[s]+'</span>'
+      +'<button data-step="'+s+':1" aria-label="plus">+</button></div></div>').join("");
+  }
+  function openBf(id){
+    bfRoom=id; document.getElementById("bfSub").textContent=T("roomWord")+" "+id;
+    const d=document.getElementById("bfDate"); d.min=todayStr();
+    const r=state.rooms.find(x=>x.id===id); const nd=r&&nextBfDate(r);
+    // open on the room's existing order, otherwise today (morning) or tomorrow (from 11:00)
+    d.value = nd || (new Date().getHours()>=11 ? tomorrowStr() : todayStr());
+    bfLoad(); bfScrim.classList.add("open");
+  }
+  function closeBf(){ bfScrim.classList.remove("open"); bfRoom=null; }
+  document.getElementById("bfSteps").addEventListener("click",e=>{
+    const b=e.target.closest("[data-step]"); if(!b) return;
+    const [s,dl]=b.dataset.step.split(":").map(Number); bfQty[s]=Math.max(0,Math.min(20,(bfQty[s]||0)+dl)); bfSteps(); });
+  document.getElementById("bfDate").addEventListener("change",bfLoad);
+  document.getElementById("bfCancel").addEventListener("click",closeBf);
+  bfScrim.addEventListener("click",e=>{ if(e.target===bfScrim) closeBf(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&bfScrim.classList.contains("open")) closeBf(); });
+  document.getElementById("bfSave").addEventListener("click",()=>{
+    const date=document.getElementById("bfDate").value;
+    if(!date){ alert(T("alertDate")); return; }
+    if(date<todayStr()){ alert(T("alertPast")); return; }
+    const r=state.rooms.find(x=>x.id===bfRoom); if(!r) return;
+    r.breakfast=(r.breakfast||[]).filter(b=>b && b.date!==date);
+    BF_SETS.forEach(s=>{
+      const q=bfQty[s]||0, id=bfId(r.id,date,s), rec=bfRecs[id];
+      if(q>0){
+        r.breakfast.push({id,date,set:s,qty:q});
+        if(!rec || rec.deleted || +rec.qty!==q){
+          const p = (rec && !rec.deleted && +rec.price>0) ? +rec.price : bfPrice(s);   // price is fixed when ordered
+          writeBf(id,{room:r.id, date, month:date.slice(0,7), set:s, qty:q, deleted:false, price:p});
+        }
+      } else if(rec && !rec.deleted) writeBf(id,{deleted:true, deletedAt:Date.now()});
+    });
+    r.breakfast.sort((a,b)=>a.date.localeCompare(b.date)||a.set-b.set);
+    prevBf[r.id]=bfSig(r); closeBf(); showToast(T("bfSaved")); persist();
   });
 
   /* ---------------- booking sheet ---------------- */
@@ -851,6 +1039,10 @@
       return {id, room:s.room, start:s.start, end:s.end||null, nights:k, price:p, amount:k*p};
     }).filter(x=>x.nights).sort((a,b)=>b.start-a.start||a.room-b.room);
   }
+  /* breakfast orders of one month (accounts copy, deleted ones left out), newest first */
+  const monthBf = key => Object.entries(bfRecs)
+    .filter(([id,b])=>b && !b.deleted && +b.qty>0 && typeof b.date==="string" && b.date.slice(0,7)===key)
+    .map(([id,b])=>bfRow(id,b)).sort((a,b)=>b.date.localeCompare(a.date)||a.room-b.room||a.set-b.set);
   const fmtTs = ts => fmt(iso(new Date(ts)));
   const nightsTxt = n => n+" "+(n===1?T("nightWord"):T("nightsWord"));
   const stayDates = x => fmtTs(x.start)+" → "+(x.end?fmtTs(x.end):T("stillOcc"));
@@ -872,7 +1064,10 @@
     const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
     ["tabBoard","tabAccounts","addExpHeading","lblExDate","lblExCat","lblExNote","lblExAmount","exAdd",
      "incomeHeading","lblPrice","priceSave","byCatHeading","expListHeading","copySalaries","incomeNote",
-     "accLockTitle","accLockSub","accDeviceNote","accLockBtn","exportHeading","exPdf","exportNote"].forEach(k=>set(k,T(k)));
+     "accLockTitle","accLockSub","accDeviceNote","accLockBtn","exportHeading","exPdf","exportNote","lblBfPrices"].forEach(k=>set(k,T(k)));
+    set("incomeNote",T("incomeNote")+" "+T("bfNote")); set("bfpSave",T("priceSave"));
+    BF_SETS.forEach(s=>set("lblBfp"+s,T("bfSetShort").replace("{n}",s)));
+    const pb=document.getElementById("exPdf"); if(pb.disabled) pb.textContent=T("exLoading");
     const xb=document.getElementById("exXlsx"); if(!xb.disabled) xb.textContent=T("exXlsx");
     const ub=document.getElementById("accUnlock"); if(!ub.disabled) ub.textContent=T("accUnlock");
     document.getElementById("exNote").placeholder=T("notePlaceholder");
@@ -889,25 +1084,33 @@
     if(!isOwner) return;
     document.getElementById("accMonth").textContent=monthLabel(accMonth);
     document.getElementById("mNext").disabled = accMonth>=curMonth();
-    const inc=monthIncome(accMonth), exps=monthExpenses(accMonth);
-    const expTotal=exps.reduce((a,e)=>a+(+e.amount||0),0), res=inc.total-expTotal;
+    const inc=monthIncome(accMonth), exps=monthExpenses(accMonth), bfs=monthBf(accMonth);
+    const bfTotal=bfs.reduce((a,x)=>a+x.amount,0), incTotal=inc.total+bfTotal;
+    const expTotal=exps.reduce((a,e)=>a+(+e.amount||0),0), res=incTotal-expTotal;
     document.getElementById("accSummary").innerHTML=
-      '<div class="stat inc"><div class="n money">'+baht(inc.total)+'</div><div class="l">'+T("income")+'</div></div>'
+      '<div class="stat inc"><div class="n money">'+baht(incTotal)+'</div><div class="l">'+T("income")+'</div></div>'
       +'<div class="stat exp"><div class="n money">'+baht(expTotal)+'</div><div class="l">'+T("expenses")+'</div></div>'
       +'<div class="stat res '+(res>=0?"pos":"neg")+'"><div class="n money">'+(res<0?"−":"")+baht(Math.abs(res))+'</div><div class="l">'+T("result")+'</div></div>';
 
     // income detail
     let ih="";
-    if(!inc.nights) ih='<div class="empty">'+T("noIncome")+'</div>';
+    if(!inc.nights && !bfs.length) ih='<div class="empty">'+T("noIncome")+'</div>';
     else {
       for(let i=1;i<=ROOM_COUNT;i++){ const n=inc.byRoom[i]; if(!n) continue;
         ih+='<div class="irow"><span>'+T("roomWord")+' '+i+'</span><span class="v">'+n+' '+(n===1?T("nightWord"):T("nightsWord"))+'</span></div>'; }
       Object.keys(inc.byPrice).sort((a,b)=>a-b).forEach(p=>{ const n=inc.byPrice[p];
         ih+='<div class="irow"><span>'+n+' '+T("nightsWord")+' × '+baht(+p)+'</span><span class="v">'+baht(n*p)+'</span></div>'; });
-      ih+='<div class="irow total"><span>'+T("totalIncome")+'</span><span class="v">'+baht(inc.total)+'</span></div>';
+      // breakfast, grouped by set and price
+      const g={}; bfs.forEach(x=>{ const k=x.set+"|"+x.price; (g[k]=g[k]||{set:x.set,price:x.price,qty:0}).qty+=x.qty; });
+      Object.values(g).sort((a,b)=>a.set-b.set||a.price-b.price).forEach(x=>{
+        ih+='<div class="irow"><span>🍳 '+x.qty+' × '+esc(T("bfSet").replace("{n}",x.set))+' × '
+          +(x.price>0?baht(x.price):'<em style="color:var(--occupied)">'+esc(T("noPriceSet"))+'</em>')
+          +'</span><span class="v">'+baht(x.qty*x.price)+'</span></div>'; });
+      ih+='<div class="irow total"><span>'+T("totalIncome")+'</span><span class="v">'+baht(incTotal)+'</span></div>';
     }
     document.getElementById("incomeBox").innerHTML=ih;
     const pin=document.getElementById("priceInput"); if(document.activeElement!==pin) pin.value=nightPrice();
+    BF_SETS.forEach(s=>{ const el=document.getElementById("bfp"+s); if(document.activeElement!==el) el.value=bfPrice(s)||""; });
     renderStayList();
     renderExportRange();
 
@@ -973,6 +1176,16 @@
     if(statsRef) setDoc(statsRef,{settings:{price:p}},{merge:true}).catch(e=>{ console.error(e); showToast(T("saveFail")); }); document.getElementById("priceInput").blur(); showToast(T("priceSaved")); renderAccounts();
   });
 
+  document.getElementById("bfpSave").addEventListener("click",()=>{
+    const o={};
+    for(const s of BF_SETS){ const v=document.getElementById("bfp"+s).value.trim(); const p=v===""?0:parseAmount(v);
+      if(!(p>=0)){ showToast(T("errPrice")); return; } o[s]=p; }
+    statsSettings=Object.assign({},statsSettings,{bfPrice:o});
+    if(statsRef) setDoc(statsRef,{settings:{bfPrice:o}},{merge:true}).catch(e=>{ console.error(e); showToast(T("saveFail")); });
+    BF_SETS.forEach(s=>document.getElementById("bfp"+s).blur());
+    showToast(T("bfPricesSaved")); renderAccounts();
+  });
+
   document.getElementById("copySalaries").addEventListener("click",()=>{
     const prev=monthExpenses(shiftMonth(accMonth,-1)).filter(e=>e.cat==="salary"); if(!prev.length) return;
     if(!confirm(T("confirmCopy").replace("{n}",prev.length))) return;
@@ -989,11 +1202,11 @@
      deleted:true. That way no device can count it again (a room that is still
      occupied would otherwise re-add its stay after the 1-hour check), and it is
      left out of income, occupancy statistics and reports. */
-  let staysOpen=false;
+  let staysOpen=false, bfOpen=false;
   function renderStayList(){
-    const box=document.getElementById("stayBox"); const list=monthStays(accMonth);
-    if(!list.length){ box.innerHTML=""; return; }
-    box.innerHTML='<details class="staylist"'+(staysOpen?" open":"")+'><summary>'+esc(T("staysHeading").replace("{n}",list.length))+'</summary>'
+    const box=document.getElementById("stayBox"); const list=monthStays(accMonth), bl=monthBf(accMonth);
+    let h="";
+    if(list.length) h+='<details class="staylist" data-k="stays"'+(staysOpen?" open":"")+'><summary>'+esc(T("staysHeading").replace("{n}",list.length))+'</summary>'
       +'<p class="snote">'+esc(T("stayHint"))+'</p><ul class="ulist">'
       +list.map(x=>'<li class="urow"><span class="edate">'+fmtTs(x.start)+'</span>'
         +'<div class="uinfo"><div class="r">'+T("roomWord")+' '+x.room+'</div>'
@@ -1001,10 +1214,32 @@
         +'<span class="eamt">'+baht(x.amount)+'</span>'
         +'<button class="x" data-delstay="'+esc(x.id)+'" aria-label="delete">×</button></li>').join("")
       +'</ul></details>';
+    if(bl.length) h+='<details class="staylist" data-k="bf"'+(bfOpen?" open":"")+'><summary>🍳 '+esc(T("bfHeading").replace("{n}",bl.length))+'</summary>'
+      +'<p class="snote">'+esc(T("bfHint"))+'</p><ul class="ulist">'
+      +bl.map(x=>'<li class="urow"><span class="edate">'+fmt(x.date)+'</span>'
+        +'<div class="uinfo"><div class="r">'+T("roomWord")+' '+x.room+'</div>'
+        +'<div class="g">'+esc(x.qty+" × "+T("bfSet").replace("{n}",x.set))+' × '+(x.price>0?baht(x.price):esc(T("noPriceSet")))+'</div></div>'
+        +'<span class="eamt">'+baht(x.amount)+'</span>'
+        +'<button class="x" data-delbf="'+esc(x.id)+'" aria-label="delete">×</button></li>').join("")
+      +'</ul></details>';
+    box.innerHTML=h;
   }
   const stayBoxEl=document.getElementById("stayBox");
-  stayBoxEl.addEventListener("toggle",e=>{ if(e.target.tagName==="DETAILS") staysOpen=e.target.open; },true);
+  stayBoxEl.addEventListener("toggle",e=>{ if(e.target.tagName!=="DETAILS") return;
+    if(e.target.dataset.k==="bf") bfOpen=e.target.open; else staysOpen=e.target.open; },true);
   stayBoxEl.addEventListener("click",e=>{
+    const fb=e.target.closest("[data-delbf]");
+    if(fb){
+      const id=fb.dataset.delbf; const x=monthBf(accMonth).find(b=>b.id===id); if(!x) return;
+      const msg=T("confirmDelBf").replace("{room}",T("roomWord")+" "+x.room).replace("{date}",fmt(x.date))
+        .replace("{amt}",x.qty+" × "+T("bfSet").replace("{n}",x.set)+" = "+baht(x.amount));
+      if(!confirm(msg)) return;
+      writeBf(id,{deleted:true, deletedAt:Date.now()});
+      const r=state.rooms.find(q=>q.id===x.room);   // also take it off the board if the date is still coming
+      if(r && (r.breakfast||[]).some(b=>b.date===x.date && +b.set===x.set)){
+        r.breakfast=r.breakfast.filter(b=>!(b.date===x.date && +b.set===x.set)); prevBf[r.id]=bfSig(r); persist(); }
+      showToast(T("bfDeleted")); renderStats(); return;
+    }
     const b=e.target.closest("[data-delstay]"); if(!b) return;
     const id=b.dataset.delstay; const x=monthStays(accMonth).find(s=>s.id===id); if(!x) return;
     const msg=T("confirmDelStay").replace("{room}",T("roomWord")+" "+x.room).replace("{dates}",stayDates(x))
@@ -1041,6 +1276,7 @@
       first=cur;
       Object.values(stays).forEach(s=>{ if(s&&s.start&&!s.deleted){ const m=monthKey(s.start); if(m<first) first=m; } });
       Object.values(accData.expenses||{}).forEach(e=>{ if(e&&typeof e.date==="string"){ const m=e.date.slice(0,7); if(m<first) first=m; } });
+      Object.values(bfRecs).forEach(b=>{ if(b&&!b.deleted&&typeof b.date==="string"){ const m=b.date.slice(0,7); if(m<first) first=m; } });
     }
     const out=[]; let k=first; while(k<=last && out.length<240){ out.push(k); k=shiftMonth(k,1); }
     return out;
@@ -1048,17 +1284,25 @@
 
   function buildReport(kind){
     const months=rangeMonths(kind), inRange=new Set(months), now=Date.now();
-    const per={}; months.forEach(m=>per[m]={nights:0,income:0,exp:0});
+    const per={}; months.forEach(m=>per[m]={nights:0,rooms:0,bf:0,exp:0});
     const stayRows=[], byRoom={};
     Object.entries(stays).forEach(([id,s])=>{
       if(!s||!s.start||s.deleted) return;
       const p=+s.price>0?+s.price:DEFAULT_PRICE; let k=0;
-      stayNightMonths(s,now).forEach(m=>{ if(inRange.has(m)){ k++; per[m].nights++; per[m].income+=p; } });
+      stayNightMonths(s,now).forEach(m=>{ if(inRange.has(m)){ k++; per[m].nights++; per[m].rooms+=p; } });
       if(!k) return;
       stayRows.push({id,room:s.room,start:s.start,end:s.end||null,nights:k,price:p,amount:k*p});
       const br=byRoom[s.room]||(byRoom[s.room]={nights:0,amount:0}); br.nights+=k; br.amount+=k*p;
     });
     stayRows.sort((a,b)=>a.start-b.start||a.room-b.room);
+    const bfRows=[], bfBySet={};
+    Object.entries(bfRecs).forEach(([id,b])=>{
+      if(!b||b.deleted||!(+b.qty>0)||typeof b.date!=="string") return;
+      const m=b.date.slice(0,7); if(!inRange.has(m)) return;
+      const x=bfRow(id,b); bfRows.push(x); per[m].bf+=x.amount;
+      const g=bfBySet[x.set]||(bfBySet[x.set]={qty:0,amount:0}); g.qty+=x.qty; g.amount+=x.amount;
+    });
+    bfRows.sort((a,b)=>a.date.localeCompare(b.date)||a.room-b.room||a.set-b.set);
     const expRows=[], byCat={};
     Object.entries(accData.expenses||{}).forEach(([id,e])=>{
       if(!e||typeof e.date!=="string") return; const m=e.date.slice(0,7); if(!inRange.has(m)) return;
@@ -1066,72 +1310,171 @@
       expRows.push({id,date:e.date,cat:e.cat,note:e.note||"",amount:a,createdAt:e.createdAt||0});
     });
     expRows.sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt-b.createdAt);
-    const income=stayRows.reduce((a,x)=>a+x.amount,0), exp=expRows.reduce((a,x)=>a+x.amount,0);
-    const nights=stayRows.reduce((a,x)=>a+x.nights,0);
+    const roomIncome=stayRows.reduce((a,x)=>a+x.amount,0), bfIncome=bfRows.reduce((a,x)=>a+x.amount,0);
+    const income=roomIncome+bfIncome, exp=expRows.reduce((a,x)=>a+x.amount,0);
+    const nights=stayRows.reduce((a,x)=>a+x.nights,0), bfQty=bfRows.reduce((a,x)=>a+x.qty,0);
     const label = kind==="month" ? monthLabel(accMonth)
       : kind==="year" ? yearLabel(accMonth.slice(0,4))
       : (months.length>1 ? monthLabel(months[0])+" – "+monthLabel(months[months.length-1]) : monthLabel(months[0]));
     const tag = kind==="month" ? accMonth : kind==="year" ? accMonth.slice(0,4) : "all";
     const fileName = ("Accounts "+RESORT+" "+tag).replace(/[\\/:*?"<>|]/g,"-");
     const created = new Date().toLocaleString(LOC(),{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
-    return {kind,months,per,stayRows,byRoom,expRows,byCat,income,exp,nights,result:income-exp,label,fileName,created};
+    return {kind,months,per,stayRows,byRoom,bfRows,bfBySet,expRows,byCat,roomIncome,bfIncome,income,exp,nights,bfQty,
+      result:income-exp,label,fileName,created};
   }
 
-  /* ---- PDF: fill the hidden report and open the print window ("Save as PDF") ---- */
   function reportHtml(R){
     const td = v => '<td class="n">'+baht(v)+'</td>';
     const tdS = v => '<td class="n'+(v<0?" neg":"")+'">'+signedBaht(v)+'</td>';
+    const th = (k,n) => '<th'+(n?' class="n"':'')+'>'+esc(T(k))+'</th>';
+    const none = '<div class="empty">'+esc(T("rpNone"))+'</div>';
+    const bfName = s => T("bfSet").replace("{n}",s);
     let h='<h1>'+esc(RESORT)+' — '+esc(T("rpTitle"))+'</h1>'
       +'<div class="rpsub">'+esc(T("rpPeriod"))+': <b>'+esc(R.label)+'</b> · '+esc(T("rpGenerated"))+': '+esc(R.created)+'</div>'
       +'<div class="rpsum"><div><span>'+esc(T("income"))+'</span><b>'+baht(R.income)+'</b></div>'
       +'<div><span>'+esc(T("expenses"))+'</span><b>'+baht(R.exp)+'</b></div>'
       +'<div class="'+(R.result<0?"neg":"pos")+'"><span>'+esc(T("result"))+'</span><b>'+signedBaht(R.result)+'</b></div>'
-      +'<div><span>'+esc(T("rpNights"))+'</span><b>'+R.nights+'</b></div></div>';
+      +'<div><span>'+esc(T("rpNights"))+'</span><b>'+R.nights+'</b></div>'
+      +'<div><span>'+esc(T("rpBreakfast"))+'</span><b>'+R.bfQty+'</b></div></div>';
     if(R.months.length>1){
-      h+='<h2>'+esc(T("rpMonthly"))+'</h2><table><thead><tr><th>'+esc(T("rpMonth"))+'</th><th class="n">'+esc(T("rpNightsCol"))+'</th><th class="n">'
-        +esc(T("income"))+'</th><th class="n">'+esc(T("expenses"))+'</th><th class="n">'+esc(T("result"))+'</th></tr></thead><tbody>'
-        +R.months.map(m=>{ const p=R.per[m]; return '<tr><td>'+esc(monthLabel(m))+'</td><td class="n">'+p.nights+'</td>'+td(p.income)+td(p.exp)+tdS(p.income-p.exp)+'</tr>'; }).join("")
-        +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.income)+td(R.exp)+tdS(R.result)+'</tr></tbody></table>';
+      h+='<h2>'+esc(T("rpMonthly"))+'</h2><table><thead><tr>'+th("rpMonth")+th("rpNightsCol",1)+th("rpRooms",1)+th("rpBreakfast",1)
+        +th("expenses",1)+th("result",1)+'</tr></thead><tbody>'
+        +R.months.map(m=>{ const p=R.per[m]; return '<tr><td>'+esc(monthLabel(m))+'</td><td class="n">'+p.nights+'</td>'
+          +td(p.rooms)+td(p.bf)+td(p.exp)+tdS(p.rooms+p.bf-p.exp)+'</tr>'; }).join("")
+        +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.roomIncome)+td(R.bfIncome)+td(R.exp)+tdS(R.result)+'</tr></tbody></table>';
     }
     const rooms=Object.keys(R.byRoom).map(Number).sort((a,b)=>a-b);
+    const sets=Object.keys(R.bfBySet).map(Number).sort((a,b)=>a-b);
     const cats=Object.keys(R.byCat).sort((a,b)=>R.byCat[b]-R.byCat[a]);
-    h+='<div class="two"><div><h2>'+esc(T("rpByRoom"))+'</h2>'+(rooms.length
-        ? '<table><thead><tr><th>'+esc(T("rpRoom"))+'</th><th class="n">'+esc(T("rpNightsCol"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th></tr></thead><tbody>'
+    const left='<h2>'+esc(T("rpByRoom"))+'</h2>'+(rooms.length
+        ? '<table><thead><tr>'+th("rpRoom")+th("rpNightsCol",1)+th("rpAmount",1)+'</tr></thead><tbody>'
           +rooms.map(r=>'<tr><td>'+esc(T("roomWord"))+' '+r+'</td><td class="n">'+R.byRoom[r].nights+'</td>'+td(R.byRoom[r].amount)+'</tr>').join("")
-          +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.income)+'</tr></tbody></table>'
-        : '<div class="empty">'+esc(T("rpNone"))+'</div>')+'</div>'
-      +'<div><h2>'+esc(T("byCatHeading"))+'</h2>'+(cats.length
-        ? '<table><thead><tr><th>'+esc(T("rpCategory"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th><th class="n">'+esc(T("rpShare"))+'</th></tr></thead><tbody>'
+          +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.roomIncome)+'</tr></tbody></table>'
+        : none)
+      +'<h2>'+esc(T("rpBreakfast"))+'</h2>'+(sets.length
+        ? '<table><thead><tr>'+th("rpSet")+th("rpQty",1)+th("rpAmount",1)+'</tr></thead><tbody>'
+          +sets.map(s=>'<tr><td>'+esc(bfName(s))+'</td><td class="n">'+R.bfBySet[s].qty+'</td>'+td(R.bfBySet[s].amount)+'</tr>').join("")
+          +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.bfQty+'</td>'+td(R.bfIncome)+'</tr></tbody></table>'
+        : none);
+    const right='<h2>'+esc(T("byCatHeading"))+'</h2>'+(cats.length
+        ? '<table><thead><tr>'+th("rpCategory")+th("rpAmount",1)+th("rpShare",1)+'</tr></thead><tbody>'
           +cats.map(c=>'<tr><td>'+esc(T("cat_"+c))+'</td>'+td(R.byCat[c])+'<td class="n">'+(R.exp?Math.round(R.byCat[c]/R.exp*100):0)+'%</td></tr>').join("")
           +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td>'+td(R.exp)+'<td class="n">100%</td></tr></tbody></table>'
-        : '<div class="empty">'+esc(T("rpNone"))+'</div>')+'</div></div>';
+        : none);
+    h+='<div class="two"><div>'+left+'</div><div>'+right+'</div></div>';
     h+='<h2>'+esc(T("rpStays"))+'</h2>'+(R.stayRows.length
-      ? '<table><thead><tr><th>'+esc(T("rpCheckIn"))+'</th><th>'+esc(T("rpCheckOut"))+'</th><th>'+esc(T("rpRoom"))+'</th><th class="n">'
-        +esc(T("rpNightsCol"))+'</th><th class="n">'+esc(T("rpPrice"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th></tr></thead><tbody>'
+      ? '<table><thead><tr>'+th("rpCheckIn")+th("rpCheckOut")+th("rpRoom")+th("rpNightsCol",1)+th("rpPrice",1)+th("rpAmount",1)+'</tr></thead><tbody>'
         +R.stayRows.map(x=>'<tr><td>'+esc(fullDate(new Date(x.start)))+'</td><td>'+esc(x.end?fullDate(new Date(x.end)):T("stillOcc"))+'</td><td>'
           +esc(T("roomWord"))+' '+x.room+'</td><td class="n">'+x.nights+'</td>'+td(x.price)+td(x.amount)+'</tr>').join("")
-        +'<tr class="tot"><td colspan="3">'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td><td></td>'+td(R.income)+'</tr></tbody></table>'
-        +'<div class="rpnote">'+esc(T("rpNightsNote"))+'</div>'
-      : '<div class="empty">'+esc(T("rpNone"))+'</div>');
+        +'<tr class="tot"><td colspan="3">'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td><td></td>'+td(R.roomIncome)+'</tr></tbody></table>'
+      : none);
+    if(R.stayRows.length) h+='<div class="rpnote">'+esc(T("rpNightsNote"))+'</div>';
+    if(R.bfRows.length) h+='<h2>'+esc(T("rpBfOrders"))+'</h2>'
+      +'<table><thead><tr>'+th("rpDate")+th("rpRoom")+th("rpSet")+th("rpQty",1)+th("rpUnitPrice",1)+th("rpAmount",1)+'</tr></thead><tbody>'
+      +R.bfRows.map(x=>'<tr><td>'+esc(fullDate(dFromIso(x.date)))+'</td><td>'+esc(T("roomWord"))+' '+x.room+'</td><td>'+esc(bfName(x.set))
+        +'</td><td class="n">'+x.qty+'</td>'+td(x.price)+td(x.amount)+'</tr>').join("")
+      +'<tr class="tot"><td colspan="3">'+esc(T("rpTotal"))+'</td><td class="n">'+R.bfQty+'</td><td></td>'+td(R.bfIncome)+'</tr></tbody></table>';
     h+='<h2>'+esc(T("expenses"))+'</h2>'+(R.expRows.length
-      ? '<table><thead><tr><th>'+esc(T("rpDate"))+'</th><th>'+esc(T("rpCategory"))+'</th><th>'+esc(T("rpNote"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th></tr></thead><tbody>'
+      ? '<table><thead><tr>'+th("rpDate")+th("rpCategory")+th("rpNote")+th("rpAmount",1)+'</tr></thead><tbody>'
         +R.expRows.map(e=>'<tr><td>'+esc(fullDate(dFromIso(e.date)))+'</td><td>'+esc(T("cat_"+e.cat))+'</td><td>'+esc(e.note)+'</td>'+td(e.amount)+'</tr>').join("")
         +'<tr class="tot"><td colspan="3">'+esc(T("rpTotal"))+'</td>'+td(R.exp)+'</tr></tbody></table>'
-      : '<div class="empty">'+esc(T("rpNone"))+'</div>');
+      : none);
     return h;
   }
-  let savedTitle=null;
-  function restoreTitle(){ if(savedTitle!==null){ document.title=savedTitle; savedTitle=null; } }
-  window.addEventListener("afterprint", restoreTitle);
-  document.getElementById("exPdf").addEventListener("click",()=>{
-    if(!isOwner) return;
-    const R=buildReport(exRange);
-    document.getElementById("printReport").innerHTML=reportHtml(R);
-    restoreTitle(); savedTitle=document.title; document.title=R.fileName;   // becomes the PDF file name
-    setTimeout(()=>window.print(), 60);
-  });
 
-  /* ---- Excel: real .xlsx with Summary / Income / Expenses sheets (SheetJS, loaded only when needed) ---- */
+  /* ---- PDF: the report is laid out on A4 pages, each page is photographed (html2canvas)
+     and put into an A4 PDF (jsPDF) that downloads directly — always A4, no print window. ---- */
+  const PAGE_W=794, PAGE_H=1123;   // A4 at 96 dpi
+  function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src;
+    s.onload=res; s.onerror=()=>{ s.remove(); rej(new Error("load failed: "+src)); }; document.head.appendChild(s); }); }
+  let pdfLibs=null;
+  function loadPdfLibs(){
+    if(window.jspdf && window.html2canvas) return Promise.resolve();
+    if(!pdfLibs) pdfLibs=Promise.all([
+      window.html2canvas ? 0 : loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+      window.jspdf ? 0 : loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")
+    ]).catch(e=>{ pdfLibs=null; throw e; });
+    return pdfLibs;
+  }
+  /* flow the report onto pages: tables split between rows (header repeated on the next page),
+     a heading is never left alone at the bottom of a page */
+  function layoutPages(stage, html, footLeft){
+    stage.innerHTML="";
+    const src=document.createElement("div"); src.innerHTML=html;
+    const blocks=[...src.children], pages=[]; let cur;
+    const newPage=()=>{ const pg=document.createElement("div"); pg.className="pdfpage rp";
+      cur=document.createElement("div"); cur.className="pgc"; pg.appendChild(cur); stage.appendChild(pg); pages.push(pg); };
+    const fits=()=>cur.scrollHeight<=cur.clientHeight+1;
+    const headPlus=(t,n)=>{ const c=document.createElement("table"); if(t.tHead) c.appendChild(t.tHead.cloneNode(true));
+      const tb=document.createElement("tbody"); [...t.tBodies[0].rows].slice(0,n).forEach(r=>tb.appendChild(r.cloneNode(true)));
+      c.appendChild(tb); return c; };
+    const splitTable=t=>{
+      const rows=[...t.tBodies[0].rows]; let part;
+      const start=()=>{ part=document.createElement("table"); if(t.tHead) part.appendChild(t.tHead.cloneNode(true));
+        part.appendChild(document.createElement("tbody")); cur.appendChild(part); };
+      start();
+      rows.forEach(r=>{
+        part.tBodies[0].appendChild(r); if(fits()) return;
+        if(part.tBodies[0].rows.length===1){
+          if(cur.children.length===1) return;          // a single row taller than a page: leave it
+          part.remove(); const prev=cur.lastElementChild; newPage();
+          if(prev && prev.tagName==="H2") cur.appendChild(prev);
+          start(); part.tBodies[0].appendChild(r);
+        } else { r.remove(); newPage(); start(); part.tBodies[0].appendChild(r); }
+      });
+    };
+    newPage();
+    blocks.forEach((b,i)=>{
+      if(b.tagName==="H2"){
+        cur.appendChild(b); const nx=blocks[i+1];
+        if(nx){ const probe = nx.tagName==="TABLE" ? headPlus(nx,2) : nx.cloneNode(true); cur.appendChild(probe);
+          const ok=fits(); probe.remove();
+          if(!ok && cur.children.length>1){ b.remove(); newPage(); cur.appendChild(b); } }
+        return;
+      }
+      cur.appendChild(b); if(fits()) return;
+      if(b.tagName==="TABLE"){ b.remove(); splitTable(b); }
+      else if(cur.children.length>1){ b.remove(); const prev=cur.lastElementChild; newPage();
+        if(prev && prev.tagName==="H2") cur.appendChild(prev); cur.appendChild(b); }
+    });
+    pages.forEach((pg,i)=>{ const f=document.createElement("div"); f.className="pgfoot";
+      f.innerHTML='<span>'+esc(footLeft)+'</span><span>'+esc(T("rpPage"))+' '+(i+1)+' / '+pages.length+'</span>'; pg.appendChild(f); });
+    return pages;
+  }
+  async function waitFonts(){
+    try{ await Promise.race([
+      Promise.all(["700 16px 'Space Grotesk'","400 16px 'Inter'","700 16px 'Inter'"].map(f=>document.fonts.load(f))
+        .concat(["400 16px 'Noto Sans Thai'","700 16px 'Noto Sans Thai'"].map(f=>document.fonts.load(f,"กข")))).then(()=>document.fonts.ready),
+      new Promise(r=>setTimeout(r,4000)) ]); }catch(e){}
+  }
+  async function makePdf(){
+    if(!isOwner) return;
+    const btn=document.getElementById("exPdf"); if(btn.disabled) return;
+    const busy=document.getElementById("pdfBusy"), stage=document.getElementById("pdfStage");
+    btn.disabled=true; btn.textContent=T("exLoading"); busy.textContent=T("pdfBusy"); busy.classList.add("on");
+    let out=null;
+    try{
+      await loadPdfLibs(); await waitFonts();
+      const R=buildReport(exRange);
+      stage.classList.add("on");
+      const pages=layoutPages(stage, reportHtml(R), RESORT+" — "+T("rpTitle")+" · "+R.label);
+      const pdf=new window.jspdf.jsPDF({orientation:"portrait", unit:"mm", format:"a4", compress:true});
+      pdf.setProperties({title:R.fileName});
+      for(let i=0;i<pages.length;i++){
+        const c=await window.html2canvas(pages[i],{scale:2, backgroundColor:"#ffffff", logging:false,
+          windowWidth:PAGE_W+40, windowHeight:PAGE_H+40, scrollX:0, scrollY:0});
+        if(i) pdf.addPage("a4","portrait");
+        pdf.addImage(c.toDataURL("image/jpeg",0.9),"JPEG",0,0,210,297,undefined,"FAST");
+      }
+      out={blob:pdf.output("blob"), name:R.fileName+".pdf"};
+    }catch(e){ console.error(e); showToast(T("pdfFail")); }
+    stage.classList.remove("on"); stage.innerHTML=""; busy.classList.remove("on");
+    btn.disabled=false; btn.textContent=T("exPdf");
+    if(out) await saveFile(out.blob, out.name);
+  }
+  document.getElementById("exPdf").addEventListener("click", makePdf);
+
+  /* ---- Excel: real .xlsx with Summary / Income / Breakfast / Expenses sheets (SheetJS, loaded only when needed) ---- */
   let xlsxLoading=null;
   function loadXLSX(){
     if(window.XLSX) return Promise.resolve(window.XLSX);
@@ -1146,6 +1489,7 @@
   const xm = v => ({t:"n", v:Math.round(v*100)/100, z:MONEY_FMT});
   const xd = d => ({t:"n", v:(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(1899,11,30))/DAY, z:"d mmm yyyy"});
   const xf = (f,v,z) => ({t:"n", v:Math.round(v*100)/100, f, z:z||MONEY_FMT});
+  const xn = (f,v) => ({t:"n", v, f});
   function mkSheet(X, rows, widths){
     const ws={}; let maxC=0;
     rows.forEach((row,r)=>(row||[]).forEach((v,c)=>{
@@ -1157,25 +1501,29 @@
     return ws;
   }
   function buildWorkbook(X, R){
+    const bfName = s => T("bfSet").replace("{n}",s);
     // Summary
     const s=[];
-    s.push([RESORT+" — "+T("rpTitle")]);
-    s.push([T("rpPeriod"), R.label]);
-    s.push([T("rpGenerated"), R.created]);
-    s.push([]);
-    s.push([T("income"), xm(R.income)]);
-    s.push([T("expenses"), xm(R.exp)]);
-    s.push([T("result"), xm(R.result)]);
-    s.push([T("rpNights"), R.nights]);
+    s.push([RESORT+" — "+T("rpTitle")]);                 // 1
+    s.push([T("rpPeriod"), R.label]);                    // 2
+    s.push([T("rpGenerated"), R.created]);               // 3
+    s.push([]);                                          // 4
+    s.push([T("rpRoomIncome"), xm(R.roomIncome)]);       // 5
+    s.push([T("rpBreakfast"), xm(R.bfIncome)]);          // 6
+    s.push([T("income"), xf("B5+B6", R.income)]);        // 7
+    s.push([T("expenses"), xm(R.exp)]);                  // 8
+    s.push([T("result"), xf("B7-B8", R.result)]);        // 9
+    s.push([T("rpNights"), R.nights]);                   // 10
+    s.push([T("rpBreakfast")+" ("+T("rpQty")+")", R.bfQty]); // 11
     s.push([]);
     s.push([T("rpMonthly")]);
-    s.push([T("rpMonth"), T("rpNightsCol"), T("income"), T("expenses"), T("result")]);
+    s.push([T("rpMonth"), T("rpNightsCol"), T("rpRooms"), T("rpBreakfast"), T("expenses"), T("result")]);
     const m0=s.length+1;
     R.months.forEach(m=>{ const p=R.per[m]; const r=s.length+1;
-      s.push([monthLabel(m), p.nights, xm(p.income), xm(p.exp), xf("C"+r+"-D"+r, p.income-p.exp)]); });
+      s.push([monthLabel(m), p.nights, xm(p.rooms), xm(p.bf), xm(p.exp), xf("C"+r+"+D"+r+"-E"+r, p.rooms+p.bf-p.exp)]); });
     const m1=s.length;
-    s.push([T("rpTotal"), {t:"n",v:R.nights,f:"SUM(B"+m0+":B"+m1+")"}, xf("SUM(C"+m0+":C"+m1+")",R.income),
-      xf("SUM(D"+m0+":D"+m1+")",R.exp), xf("SUM(E"+m0+":E"+m1+")",R.result)]);
+    s.push([T("rpTotal"), xn("SUM(B"+m0+":B"+m1+")",R.nights), xf("SUM(C"+m0+":C"+m1+")",R.roomIncome),
+      xf("SUM(D"+m0+":D"+m1+")",R.bfIncome), xf("SUM(E"+m0+":E"+m1+")",R.exp), xf("SUM(F"+m0+":F"+m1+")",R.result)]);
     s.push([]);
     s.push([T("byCatHeading")]);
     s.push([T("rpCategory"), T("rpAmount")]);
@@ -1191,16 +1539,31 @@
     if(rooms.length){ const r0=s.length+1;
       rooms.forEach(r=>s.push([T("roomWord")+" "+r, R.byRoom[r].nights, xm(R.byRoom[r].amount)]));
       const r1=s.length;
-      s.push([T("rpTotal"), {t:"n",v:R.nights,f:"SUM(B"+r0+":B"+r1+")"}, xf("SUM(C"+r0+":C"+r1+")", R.income)]); }
+      s.push([T("rpTotal"), xn("SUM(B"+r0+":B"+r1+")",R.nights), xf("SUM(C"+r0+":C"+r1+")", R.roomIncome)]); }
+    else s.push([T("rpNone")]);
+    s.push([]);
+    s.push([T("rpBreakfast")]);
+    s.push([T("rpSet"), T("rpQty"), T("rpAmount")]);
+    const sets=Object.keys(R.bfBySet).map(Number).sort((a,b)=>a-b);
+    if(sets.length){ const b0=s.length+1;
+      sets.forEach(k=>s.push([bfName(k), R.bfBySet[k].qty, xm(R.bfBySet[k].amount)]));
+      const b1=s.length;
+      s.push([T("rpTotal"), xn("SUM(B"+b0+":B"+b1+")",R.bfQty), xf("SUM(C"+b0+":C"+b1+")", R.bfIncome)]); }
     else s.push([T("rpNone")]);
 
-    // Income (one row per stay)
+    // Income (one row per room stay)
     const inc=[[T("rpCheckIn"), T("rpCheckOut"), T("rpRoom"), T("rpNightsCol"), T("rpPrice"), T("rpAmount")]];
     R.stayRows.forEach(x=>inc.push([xd(new Date(x.start)), x.end?xd(new Date(x.end)):T("stillOcc"), T("roomWord")+" "+x.room,
       x.nights, xm(x.price), xm(x.amount)]));
     const ni=inc.length;
-    inc.push([T("rpTotal"), "", "", ni>1?{t:"n",v:R.nights,f:"SUM(D2:D"+ni+")"}:0, "", ni>1?xf("SUM(F2:F"+ni+")",R.income):xm(0)]);
+    inc.push([T("rpTotal"), "", "", ni>1?xn("SUM(D2:D"+ni+")",R.nights):0, "", ni>1?xf("SUM(F2:F"+ni+")",R.roomIncome):xm(0)]);
     inc.push([]); inc.push([T("rpNightsNote")]);
+
+    // Breakfast (one row per order)
+    const bf=[[T("rpDate"), T("rpRoom"), T("rpSet"), T("rpQty"), T("rpUnitPrice"), T("rpAmount")]];
+    R.bfRows.forEach(x=>bf.push([xd(dFromIso(x.date)), T("roomWord")+" "+x.room, bfName(x.set), x.qty, xm(x.price), xm(x.amount)]));
+    const nb=bf.length;
+    bf.push([T("rpTotal"), "", "", nb>1?xn("SUM(D2:D"+nb+")",R.bfQty):0, "", nb>1?xf("SUM(F2:F"+nb+")",R.bfIncome):xm(0)]);
 
     // Expenses
     const ex=[[T("rpDate"), T("rpCategory"), T("rpNote"), T("rpAmount")]];
@@ -1209,16 +1572,27 @@
     ex.push([T("rpTotal"), "", "", ne>1?xf("SUM(D2:D"+ne+")",R.exp):xm(0)]);
 
     const wb=X.utils.book_new();
-    X.utils.book_append_sheet(wb, mkSheet(X,s,[30,16,16,16,16]), T("sheetSummary"));
+    X.utils.book_append_sheet(wb, mkSheet(X,s,[30,14,16,16,16,16]), T("sheetSummary"));
     X.utils.book_append_sheet(wb, mkSheet(X,inc,[15,15,12,9,13,14]), T("sheetIncome"));
+    X.utils.book_append_sheet(wb, mkSheet(X,bf,[15,12,22,8,13,14]), T("sheetBreakfast"));
     X.utils.book_append_sheet(wb, mkSheet(X,ex,[15,26,34,14]), T("sheetExpenses"));
     return wb;
   }
+  /* iPhone home-screen apps cannot download: use the share sheet (Save to Files, LINE, Mail …).
+     If the phone refuses the share sheet because preparing took a few seconds, show a "Save" button to tap. */
+  function shareLater(file){
+    const busy=document.getElementById("pdfBusy");
+    busy.innerHTML='<button class="btn primary" style="padding:14px 26px;font-size:1rem">⬇ '+esc(file.name)+'</button>';
+    busy.classList.add("on");
+    busy.onclick=async e=>{ if(!e.target.closest("button")) { busy.classList.remove("on"); busy.onclick=null; return; }
+      try{ await navigator.share({files:[file], title:file.name}); }catch(err){}
+      busy.classList.remove("on"); busy.onclick=null; };
+  }
   async function saveFile(blob, name){
     const file = (typeof File==="function") ? new File([blob], name, {type:blob.type}) : null;
-    // iPhone home-screen app cannot download files — use the share sheet there (Save to Files, LINE, Mail …)
     if(file && navigator.standalone===true && navigator.canShare && navigator.canShare({files:[file]})){
-      try{ await navigator.share({files:[file], title:name}); return; }catch(e){ if(e && e.name==="AbortError") return; }
+      try{ await navigator.share({files:[file], title:name}); return; }
+      catch(e){ if(e && e.name==="AbortError") return; if(e && e.name==="NotAllowedError"){ shareLater(file); return; } }
     }
     const url=URL.createObjectURL(blob); const a=document.createElement("a");
     a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
@@ -1293,6 +1667,10 @@
             if(allow && prev!==undefined && prev!==vs) changed.push({id:r.id,vs}); prevView[r.id]=vs; });
           if(changed.length>2){ playFree(); showToast(T("boardUpdated")); }
           else changed.forEach(c=>{ playSound(c.vs); notify(T("notifStatus"), T("roomWord")+" "+c.id+" → "+T(c.vs), "room"+c.id); });
+          // breakfast ordered/changed on another device -> sound + message (for the kitchen)
+          const bfCh=[];
+          state.rooms.forEach(r=>{ const sg=bfSig(r); if(allow && prevBf[r.id]!==undefined && prevBf[r.id]!==sg) bfCh.push(r.id); prevBf[r.id]=sg; });
+          if(bfCh.length){ if(!changed.length) playFree(); notify(T("bfUpdated"), bfCh.map(id=>T("roomWord")+" "+id).join(", "), "bf"); }
           firstSnap=false; ready=true;
           const a=purgePast(), b=reconcile();
           if(a||b) persist(); else { render(); setSync("ok","syncOk"); }
@@ -1308,6 +1686,7 @@
       const data = snap.exists() ? snap.data() : null;
       stays = (data && data.stays && typeof data.stays==="object") ? data.stays : {};
       statsSettings = (data && data.settings && typeof data.settings==="object") ? data.settings : {};
+      bfRecs = (data && data.breakfasts && typeof data.breakfasts==="object") ? data.breakfasts : {};
       statsReady=true;
       if(reconcile()) persist(); else renderStats();
     }, err=>{ console.error("stats:",err); });
