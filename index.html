@@ -260,14 +260,17 @@
   .room-actions .mini+.mini{border-left:1px solid var(--line)}
   .mini.idb{color:var(--teal)}
   .idtake{display:block;text-align:center;text-transform:none;letter-spacing:0;font-weight:600;color:var(--arrive);padding:16px;margin:0 0 12px;font-size:1rem;background:#e9f0fd;color:var(--arrive);border-color:#cfdcf7;border-radius:14px}
-  .idprev{display:block;width:100%;max-height:260px;object-fit:contain;border-radius:12px;background:#f1f3f2;margin:0 0 14px}
+  .idprev{display:block;width:100%;max-height:300px;object-fit:contain;border-radius:12px;background:#f1f3f2;margin:0 0 14px}
   .idrow{cursor:pointer}
   #idView{position:fixed;inset:0;z-index:160;background:rgba(10,14,13,.94);display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px 12px calc(16px + env(safe-area-inset-bottom))}
   #idView.on{display:flex}
   #idView img{max-width:100%;max-height:calc(100% - 110px);object-fit:contain;border-radius:8px;background:#222}
   #idCap{color:#e8ecea;font-size:.9rem;margin:12px 0 10px;text-align:center}
-  #idView .bar{display:flex;gap:10px;width:100%;max-width:420px}
-  #idView .bar .btn{flex:1;padding:13px}
+  #idView .idbar{display:flex;gap:10px;width:100%;max-width:420px}
+  #idView .idbar .btn{flex:1;padding:13px}
+  .idedit{display:block;width:100%;border-radius:12px;margin:0 0 10px;touch-action:none;background:#222}
+  .idtools{display:flex;gap:8px;margin:0 0 14px}
+  .idtools .btn{flex:1;padding:10px 6px;font-size:.82rem;white-space:nowrap}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 </head>
@@ -459,7 +462,12 @@
     <h3 id="idTitle">Guest ID card</h3>
     <p class="sub" id="idSub"></p>
     <label class="btn idtake"><input type="file" accept="image/*" capture="environment" id="idFile" hidden><span id="idTakeTxt">📷 Take photo</span></label>
-    <img id="idPrev" class="idprev" alt="" hidden>
+    <div id="idWork" hidden>
+      <img id="idPrev" class="idprev" alt="" hidden>
+      <canvas id="idEdit" class="idedit" hidden></canvas>
+      <p class="snote" id="idHint" style="margin:0 0 8px"></p>
+      <div class="idtools"><button class="btn" id="idAdjust">✂ Adjust</button><button class="btn" id="idRot">↻ Rotate</button><button class="btn" id="idFull">Full photo</button></div>
+    </div>
     <label for="idGuestIn" id="idLblGuest">Guest name (optional)</label>
     <input type="text" id="idGuestIn" autocomplete="off">
     <p class="snote" id="idPriv" style="margin:-6px 0 10px"></p>
@@ -472,7 +480,7 @@
 </div>
 
 <div id="idView"><img id="idImg" alt=""><div id="idCap"></div>
-  <div class="bar"><button class="btn" id="idDl">Save photo</button><button class="btn primary" id="idX">Close</button></div></div>
+  <div class="idbar"><button class="btn" id="idDl">Save photo</button><button class="btn primary" id="idX">Close</button></div></div>
 
 <div id="toasts"></div>
 <div id="pdfStage"></div>
@@ -579,6 +587,11 @@
       idTile:"🪪 ID card saved", idTileN:"🪪 {n} ID cards saved",
       idHeading:"🪪 Guest ID cards this month ({n})", idNone:"No ID cards saved in this month.", idOpen:"tap to open",
       idNote:"Only you can see these. Photos are deleted automatically after 1 year.",
+      idAdjust:"✂ Adjust", idDone:"✓ Done", idCrop:"✂ Crop", idRotate:"↻ Rotate", idFullPhoto:"Full photo",
+      idHintAuto:"The card was found and straightened. Not right? Tap Adjust.",
+      idHintDrag:"Drag the 4 yellow circles to the corners of the card, then tap Done.",
+      idHintNotFound:"Card not found — drag the 4 yellow circles to the corners of the card, then tap Done.",
+      idHintFull:"The whole photo will be saved.",
       idSavePhoto:"Save photo", idClose:"Close", confirmDelId:"Delete this ID card photo?\n\n{room} · {date}",
       idDeleted:"ID card deleted", idLoadFail:"Could not open the photo.",
       idListFail:"ID cards cannot be shown — the Firebase rules for ID cards are not set up yet.",
@@ -659,6 +672,11 @@
       idTile:"🪪 บันทึกบัตรแล้ว", idTileN:"🪪 บันทึกบัตรแล้ว {n} ใบ",
       idHeading:"🪪 บัตรประชาชนผู้เข้าพักเดือนนี้ ({n})", idNone:"ไม่มีบัตรที่บันทึกในเดือนนี้", idOpen:"แตะเพื่อเปิด",
       idNote:"เฉพาะคุณเท่านั้นที่เห็น รูปจะถูกลบอัตโนมัติหลังจาก 1 ปี",
+      idAdjust:"✂ ปรับ", idDone:"✓ เสร็จ", idCrop:"✂ ครอบตัด", idRotate:"↻ หมุน", idFullPhoto:"ทั้งรูป",
+      idHintAuto:"พบบัตรและปรับให้ตรงแล้ว ถ้าไม่ถูกต้อง แตะ ปรับ",
+      idHintDrag:"ลากวงกลมสีเหลือง 4 จุดไปที่มุมของบัตร แล้วแตะ เสร็จ",
+      idHintNotFound:"ไม่พบบัตร — ลากวงกลมสีเหลือง 4 จุดไปที่มุมของบัตร แล้วแตะ เสร็จ",
+      idHintFull:"จะบันทึกทั้งรูป",
       idSavePhoto:"บันทึกรูป", idClose:"ปิด", confirmDelId:"ลบรูปบัตรนี้?\n\n{room} · {date}",
       idDeleted:"ลบรูปบัตรแล้ว", idLoadFail:"เปิดรูปไม่สำเร็จ",
       idListFail:"แสดงบัตรไม่ได้ — ยังไม่ได้ตั้งค่ากฎ Firebase สำหรับบัตรประชาชน",
@@ -847,7 +865,9 @@
     set("idTitle",T("idTitle")); set("idLblGuest",T("idGuest")); set("idCancel",T("cancel")); set("idPriv",T("idPrivacy"));
     set("idDl",T("idSavePhoto")); set("idX",T("idClose"));
     if(!idBusy) set("idSaveBtn",T("idSave"));
-    set("idTakeTxt", (typeof idData!=="undefined" && idData) ? T("idRetake") : T("idTake"));
+    set("idTakeTxt", (typeof idSrc!=="undefined" && idSrc) ? T("idRetake") : T("idTake"));
+    if(typeof idSrc!=="undefined" && idSrc){ idToolsText();
+      document.getElementById("idHint").textContent=T(idEditing?"idHintDrag":idMode==="full"?"idHintFull":"idHintAuto"); }
     const bg=document.getElementById("bguest"); if(bg) bg.placeholder=T("guestPlaceholder");
     document.querySelectorAll("#langTog .seg").forEach(b=>b.classList.toggle("active", b.dataset.lang===lang));
     setSync(syncCls,syncKeyName);
@@ -1693,10 +1713,16 @@
      guestIdImg/{id} = {img}.  Firestore rules let staff phones only ADD; only the owner login (Accounts code)
      can list, open or delete them. Photos older than 1 year are deleted when the owner opens Accounts. */
   const ID_KEEP_MS = 365*DAY;
-  let idRoom=null, idData=null, idBusy=false;
+  let idRoom=null, idData=null, idBusy=false;   // idData = {img: jpeg data URL} ready to save
   const idScrim=document.getElementById("idScrim");
+  /* ---- photo + auto-crop ----
+     idSrc   = the photo (max 2000 px), idQuad = the 4 card corners in idSrc pixels (clockwise from top-left),
+     idMode  = "crop" (straightened card) or "full" (whole photo), idEditing = corner editor open. */
+  let idSrc=null, idSrcData=null, idQuad=null, idMode="crop", idEditing=false, idDrag=-1;
   function idReset(){
-    idData=null; const p=document.getElementById("idPrev"); p.hidden=true; p.removeAttribute("src");
+    idData=null; idSrc=null; idSrcData=null; idQuad=null; idMode="crop"; idEditing=false; idDrag=-1;
+    const p=document.getElementById("idPrev"); p.hidden=true; p.removeAttribute("src");
+    document.getElementById("idWork").hidden=true; document.getElementById("idEdit").hidden=true;
     document.getElementById("idFile").value=""; document.getElementById("idErr").textContent="";
     document.getElementById("idTakeTxt").textContent=T("idTake");
   }
@@ -1712,30 +1738,266 @@
 
   function loadImg(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image();
     im.onload=()=>{ URL.revokeObjectURL(url); res(im); }; im.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("image")); }; im.src=url; }); }
-  /* make the photo small enough for one Firestore document (< 1 MB) while the card stays readable */
-  async function shrinkPhoto(file){
-    const im=await loadImg(file); let side=1600, q=0.8, out="", w=0, h=0;
-    for(let i=0;i<10;i++){
-      const k=Math.min(1, side/Math.max(im.naturalWidth,im.naturalHeight));
-      w=Math.max(1,Math.round(im.naturalWidth*k)); h=Math.max(1,Math.round(im.naturalHeight*k));
-      const c=document.createElement("canvas"); c.width=w; c.height=h; const g=c.getContext("2d");
-      g.fillStyle="#fff"; g.fillRect(0,0,w,h); g.drawImage(im,0,0,w,h);
-      out=c.toDataURL("image/jpeg",q);
-      if(out.length<=700000) break;
-      side=Math.round(side*0.85); q=Math.max(0.5,q-0.07);
-    }
-    return {img:out,w,h};
+  function scaledCanvas(src, maxSide){
+    let cur=src, cw=src.naturalWidth||src.width, ch=src.naturalHeight||src.height;
+    const k=Math.min(1, maxSide/Math.max(cw,ch)), tw=Math.max(1,Math.round(cw*k)), th=Math.max(1,Math.round(ch*k));
+    // shrink in halves so the small copy stays smooth (one big jump gives a grainy image)
+    while(cw/2>=tw*1.5){ const c=document.createElement("canvas"); c.width=Math.round(cw/2); c.height=Math.round(ch/2);
+      const g=c.getContext("2d"); g.imageSmoothingQuality="high"; g.drawImage(cur,0,0,c.width,c.height); cur=c; cw=c.width; ch=c.height; }
+    const c=document.createElement("canvas"); c.width=tw; c.height=th;
+    const g=c.getContext("2d"); g.imageSmoothingQuality="high"; g.fillStyle="#fff"; g.fillRect(0,0,tw,th); g.drawImage(cur,0,0,tw,th); return c;
   }
+  /* JPEG small enough for one Firestore document (< 1 MB) while the text stays readable */
+  function toJpeg(c, maxSide){
+    let side=maxSide, q=0.85, out="";
+    for(let i=0;i<10;i++){ const s=scaledCanvas(c, side); out=s.toDataURL("image/jpeg",q);
+      if(out.length<=700000) break; side=Math.round(side*0.85); q=Math.max(0.5,q-0.07); }
+    return out;
+  }
+
+  /* find the card: colour edges -> Hough lines -> best 4-sided shape that has a real colour change
+     along all 4 sides, the shape of an ID card (85.6 × 54 mm) and a reasonable size */
+  const CARD_RATIO=85.6/54, SUP_DIFF=28, SUP_G=29, SUP_MIN=0.55;
+  function detectCard(cv){
+    const W=cv.width, H=cv.height, N=W*H, d=cv.getContext("2d").getImageData(0,0,W,H).data;
+    const ch=[0,1,2].map(k=>{ const a=new Float32Array(N); for(let i=0;i<N;i++) a[i]=d[i*4+k]; return a; });
+    const B=ch.map(a=>{ const o=new Float32Array(N);
+      for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){ let s=0; for(let dy=-1;dy<=1;dy++){ const r=(y+dy)*W+x; s+=a[r-1]+a[r]+a[r+1]; } o[y*W+x]=s/9; }
+      return o; });
+    const mag=new Float32Array(N), ang=new Float32Array(N);
+    for(let y=2;y<H-2;y++) for(let x=2;x<W-2;x++){ const i=y*W+x; let best=0,bx=0,by=0;
+      for(const a of B){ const gx=(a[i-W+1]+2*a[i+1]+a[i+W+1])-(a[i-W-1]+2*a[i-1]+a[i+W-1]);
+        const gy=(a[i+W-1]+2*a[i+W]+a[i+W+1])-(a[i-W-1]+2*a[i-W]+a[i-W+1]); const m=gx*gx+gy*gy;
+        if(m>best){ best=m; bx=gx; by=gy; } }
+      mag[i]=Math.sqrt(best); ang[i]=Math.atan2(by,bx); }
+    // thin edges (keep only the ridge of each edge, like Canny) above a fixed strength
+    const thr=48, edge=new Uint8Array(N);
+    for(let y=2;y<H-2;y++) for(let x=2;x<W-2;x++){ const i=y*W+x, m=mag[i]; if(m<thr) continue;
+      let a=ang[i]*180/Math.PI; if(a<0) a+=180; let o;
+      if(a<22.5||a>=157.5) o=1; else if(a<67.5) o=W+1; else if(a<112.5) o=W; else o=W-1;
+      if(m>=mag[i-o] && m>=mag[i+o]) edge[i]=1; }
+    // Hough transform (1° steps, each edge pixel votes only near its own direction)
+    const D=Math.ceil(Math.hypot(W,H)), R=2*D+1, NT=180, COS=[], SIN=[];
+    for(let t=0;t<NT;t++){ COS[t]=Math.cos(t*Math.PI/180); SIN[t]=Math.sin(t*Math.PI/180); }
+    const raw=new Float32Array(NT*R);
+    for(let y=2;y<H-2;y++) for(let x=2;x<W-2;x++){ const i=y*W+x; if(!edge[i]) continue;
+      let t0=Math.round(ang[i]*180/Math.PI); t0=((t0%180)+180)%180;
+      const wt=Math.min(mag[i],300)/100;     // strong (sharp, high-contrast) edges count more than faint printed lines
+      for(let dt=-3;dt<=3;dt++){ const t=(t0+dt+180)%180; const rf=x*COS[t]+y*SIN[t]+D, r0=Math.floor(rf), w=rf-r0;
+        raw[t*R+r0]+=(1-w)*wt; raw[t*R+r0+1]+=w*wt; } }
+    // smooth the votes (±1°, ±1 px) so slightly bent / perspective-skewed edges still add up
+    const hough=new Float32Array(NT*R);
+    for(let t=0;t<NT;t++) for(let r=1;r<R-1;r++){ let v=0;
+      for(let dt=-1;dt<=1;dt++){ const tt=(t+dt+NT)%NT, rr=(t+dt<0||t+dt>=NT)?(2*D-r):r; if(rr<1||rr>=R-1) continue;
+        const o=tt*R+rr; v+=raw[o-1]+raw[o]+raw[o+1]; }
+      hough[t*R+r]=v; }
+    const minVotes=Math.min(W,H)*0.25, cand=[];
+    for(let t=0;t<NT;t++) for(let r=2;r<R-2;r++){ const v=hough[t*R+r]; if(v<minVotes) continue;
+      let peak=true;
+      for(let dt=-2;dt<=2&&peak;dt++){ const tt=t+dt; if(tt<0||tt>=NT) continue; for(let dr=-2;dr<=2;dr++){ if(!dt&&!dr) continue; if(hough[tt*R+r+dr]>v){ peak=false; break; } } }
+      if(peak) cand.push([v,t,r-D]); }
+    cand.sort((a,b)=>b[0]-a[0]);
+    const lines=[];
+    for(const [v,t,r] of cand){
+      if(lines.some(l=>{ let dt=Math.abs(l.t-t), rr=r; if(dt>90){ dt=180-dt; rr=-r; } return dt<=2 && Math.abs(l.r-rr)<=3; })) continue;
+      lines.push({t,r,c:COS[t],s:SIN[t]}); if(lines.length>=70) break; }
+    // colour along a side: does the colour really change from inside to outside?
+    const col=(x,y)=>{ const xi=Math.max(0,Math.min(W-1,Math.round(x))), yi=Math.max(0,Math.min(H-1,Math.round(y))), i=yi*W+xi; return [B[0][i],B[1][i],B[2][i]]; };
+    const angDiff=(a,b)=>{ const d=Math.abs(a-b)%180; return d>90?180-d:d; };
+    const X=(a,b)=>{ const det=a.c*b.s-a.s*b.c; if(Math.abs(det)<1e-6) return null; return [(a.r*b.s-a.s*b.r)/det, (a.c*b.r-a.r*b.c)/det]; };
+    const pairs=[];
+    for(let i=0;i<lines.length;i++) for(let j=i+1;j<lines.length;j++){ const a=lines[i], b=lines[j];
+      if(angDiff(a.t,b.t)>14) continue; const rb = Math.abs(a.t-b.t)>90 ? -b.r : b.r;
+      if(Math.abs(a.r-rb) < Math.min(W,H)*0.12) continue; pairs.push([a,b]); }
+    /* score a 4-corner shape: every side must show a real edge with a colour change across it */
+    function quadScore(pts, full){
+      const cx=pts.reduce((s,v)=>s+v[0],0)/4, cy=pts.reduce((s,v)=>s+v[1],0)/4;
+      pts=pts.slice().sort((u,v)=>Math.atan2(u[1]-cy,u[0]-cx)-Math.atan2(v[1]-cy,v[0]-cx));
+      let area=0; for(let k=0;k<4;k++){ const u=pts[k], v=pts[(k+1)%4]; area+=u[0]*v[1]-v[0]*u[1]; } area=Math.abs(area)/2;
+      const f=area/(W*H); if(!full && (f<0.05 || f>0.97)) return null;
+      const L=[0,1,2,3].map(k=>Math.hypot(pts[(k+1)%4][0]-pts[k][0], pts[(k+1)%4][1]-pts[k][1]));
+      const sa=(L[0]+L[2])/2, sb=(L[1]+L[3])/2, ratio=Math.max(sa,sb)/Math.min(sa,sb);
+      if(!full && (ratio<1.15 || ratio>2.2)) return null;
+      if(!full && (Math.min(L[0],L[2])/Math.max(L[0],L[2])<0.6 || Math.min(L[1],L[3])/Math.max(L[1],L[3])<0.6)) return null;
+      const sup=[];
+      for(let k=0;k<4;k++){ const u=pts[k], v=pts[(k+1)%4]; let nx=-(v[1]-u[1]), ny=v[0]-u[0]; const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+        const mx=(u[0]+v[0])/2, my=(u[1]+v[1])/2; if((cx-mx)*nx+(cy-my)*ny<0){ nx=-nx; ny=-ny; }   // normal points inward
+        let ok=0; const n=36;
+        for(let s=0;s<n;s++){ const tt=0.08+0.84*s/(n-1), x=u[0]+(v[0]-u[0])*tt, y=u[1]+(v[1]-u[1])*tt;
+          // average colour of a strip just inside vs just outside (3–8 px), so thin printed lines don't count
+          let ir=0,ig=0,ib=0,or=0,og=0,ob=0;
+          for(let o=3;o<=8;o++){ const a=col(x+nx*o,y+ny*o), b=col(x-nx*o,y-ny*o); ir+=a[0]; ig+=a[1]; ib+=a[2]; or+=b[0]; og+=b[1]; ob+=b[2]; }
+          const diff=(Math.abs(ir-or)+Math.abs(ig-og)+Math.abs(ib-ob))/6;
+          // a real edge right on the side, running ALONG the side (not lines crossing it)
+          let g=0, gi=-1; for(let e=-2;e<=2;e++){ const xi=Math.round(x+nx*e), yi=Math.round(y+ny*e);
+            if(xi>=0&&yi>=0&&xi<W&&yi<H && mag[yi*W+xi]>g){ g=mag[yi*W+xi]; gi=yi*W+xi; } }
+          if(diff>SUP_DIFF && g>SUP_G && Math.abs(Math.cos(ang[gi])*nx+Math.sin(ang[gi])*ny)>0.9) ok++; }
+        sup.push(ok/n); if(!full && ok/n<SUP_MIN) return null; }
+      const minS=Math.min(...sup), meanS=sup.reduce((s,v)=>s+v,0)/4;
+      const aspectF=Math.exp(-Math.pow((ratio-CARD_RATIO)/0.3,2));
+      return {pts, sup, ratio, f, score:meanS*minS*(0.35+0.65*aspectF)*Math.pow(f,0.5)};
+    }
+    let best=null, bestS=0;
+    for(let p=0;p<pairs.length;p++) for(let q=p+1;q<pairs.length;q++){
+      const [a1,a2]=pairs[p], [b1,b2]=pairs[q];
+      if(angDiff(a1.t,b1.t)<50) continue;
+      const pts=[X(a1,b1),X(a2,b1),X(a2,b2),X(a1,b2)]; if(pts.some(v=>!v)) continue;
+      if(pts.some(([x,y])=>x<-W*0.04||x>W*1.04||y<-H*0.04||y>H*1.04)) continue;
+      const r=quadScore(pts); if(!r || r.score<=bestS) continue;
+      bestS=r.score; best=r.pts.map(v=>[Math.max(0,Math.min(W,v[0])),Math.max(0,Math.min(H,v[1]))]);
+    }
+    return bestS>0.12 ? best : null;
+  }
+  /* sharpen the corners on a larger copy: move/turn each side a little to where the colour edge is strongest */
+  function refineQuad(cv, q){
+    const W=cv.width, H=cv.height, d=cv.getContext("2d").getImageData(0,0,W,H).data;
+    const px=(x,y)=>{ const xi=Math.max(0,Math.min(W-1,Math.round(x))), yi=Math.max(0,Math.min(H-1,Math.round(y))), i=(yi*W+xi)*4; return [d[i],d[i+1],d[i+2]]; };
+    const cx=q.reduce((s,v)=>s+v[0],0)/4, cy=q.reduce((s,v)=>s+v[1],0)/4, sides=[];
+    const span=Math.max(6, Math.round(Math.max(W,H)*0.012));
+    for(let k=0;k<4;k++){
+      const u=q[k], v=q[(k+1)%4], len=Math.hypot(v[0]-u[0],v[1]-u[1])||1, dx=(v[0]-u[0])/len, dy=(v[1]-u[1])/len;
+      const mx=(u[0]+v[0])/2, my=(u[1]+v[1])/2; let nx=-dy, ny=dx; if((cx-mx)*nx+(cy-my)*ny<0){ nx=-nx; ny=-ny; }
+      let best=-1, bl=null;
+      for(let dd=-span; dd<=span; dd++) for(let ph=-2.5; ph<=2.5; ph+=0.5){
+        const a=ph*Math.PI/180, rx=dx*Math.cos(a)-dy*Math.sin(a), ry=dx*Math.sin(a)+dy*Math.cos(a), rnx=-ry, rny=rx;
+        const ox=mx+nx*dd, oy=my+ny*dd; let s=0;
+        for(let i=0;i<48;i++){ const t=(-0.4+0.8*i/47)*len, x=ox+rx*t, y=oy+ry*t;
+          const p1=px(x+rnx*2,y+rny*2), p2=px(x-rnx*2,y-rny*2); s+=Math.abs(p1[0]-p2[0])+Math.abs(p1[1]-p2[1])+Math.abs(p1[2]-p2[2]); }
+        if(s>best){ best=s; bl={x:ox,y:oy,dx:rx,dy:ry}; } }
+      sides.push(bl);
+    }
+    const X=(a,b)=>{ const det=a.dx*b.dy-a.dy*b.dx; if(Math.abs(det)<1e-6) return null;
+      const t=((b.x-a.x)*b.dy-(b.y-a.y)*b.dx)/det; return [a.x+a.dx*t, a.y+a.dy*t]; };
+    const out=[0,1,2,3].map(k=>X(sides[(k+3)%4], sides[k]));
+    if(out.some((p,k)=>!p || Math.hypot(p[0]-q[k][0],p[1]-q[k][1])>span*2.5)) return q;   // something odd: keep the first guess
+    return out.map(([x,y])=>[Math.max(0,Math.min(W,x)),Math.max(0,Math.min(H,y))]);
+  }
+  /* look for the card on a small copy first (thin printed lines blur away there), then a bit larger */
+  function findCard(src){
+    for(const side of [320,480]){
+      const small=scaledCanvas(src,side), found=detectCard(small); if(!found) continue;
+      const big=scaledCanvas(src,1000), k1=big.width/small.width, k2=src.width/big.width;
+      const q=refineQuad(big, orderQuad(found).map(([x,y])=>[x*k1,y*k1]));
+      return q.map(([x,y])=>[x*k2,y*k2]);
+    }
+    return null;
+  }
+  /* corners clockwise starting top-left; long side on top (landscape card) */
+  function orderQuad(q){
+    const cx=q.reduce((s,v)=>s+v[0],0)/4, cy=q.reduce((s,v)=>s+v[1],0)/4;
+    const p=q.slice().sort((u,v)=>Math.atan2(u[1]-cy,u[0]-cx)-Math.atan2(v[1]-cy,v[0]-cx));
+    let k=0; for(let i=1;i<4;i++) if(p[i][0]+p[i][1]<p[k][0]+p[k][1]) k=i;
+    let o=[0,1,2,3].map(i=>p[(k+i)%4]);
+    const d=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+    if(d(o[0],o[1])+d(o[2],o[3]) < d(o[1],o[2])+d(o[3],o[0])) o=[o[3],o[0],o[1],o[2]];
+    return o;
+  }
+  /* perspective-straighten the card from the photo */
+  function solve8(A,b){ const n=8, M=A.map((r,i)=>r.concat([b[i]]));
+    for(let c=0;c<n;c++){ let p=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r;
+      [M[c],M[p]]=[M[p],M[c]]; const v=M[c][c]||1e-12;
+      for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]/v; for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; } }
+    return M.map((r,i)=>r[n]/(r[i]||1e-12)); }
+  function warpCard(src, quad){
+    const d=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+    const sa=(d(quad[0],quad[1])+d(quad[3],quad[2]))/2, sb=(d(quad[1],quad[2])+d(quad[0],quad[3]))/2;
+    const ratio=Math.max(0.5,Math.min(2.2, sa/Math.max(1,sb)));
+    const long=Math.max(700, Math.min(1400, Math.round(Math.max(sa,sb)*1.1)));
+    const ow=ratio>=1?long:Math.round(long*ratio), oh=ratio>=1?Math.round(long/ratio):long;
+    const A=[], b=[], dst=[[0,0],[ow,0],[ow,oh],[0,oh]];
+    for(let k=0;k<4;k++){ const [u,v]=dst[k], [x,y]=quad[k];
+      A.push([u,v,1,0,0,0,-u*x,-v*x]); b.push(x); A.push([0,0,0,u,v,1,-u*y,-v*y]); b.push(y); }
+    const h=solve8(A,b), sw=src.width, sh=src.height;
+    if(!idSrcData) idSrcData=src.getContext("2d").getImageData(0,0,sw,sh).data;
+    const s=idSrcData, out=document.createElement("canvas"); out.width=ow; out.height=oh;
+    const g=out.getContext("2d"), od=g.createImageData(ow,oh), o=od.data;
+    for(let v=0;v<oh;v++){ const vv=v+0.5;
+      for(let u=0;u<ow;u++){ const uu=u+0.5, den=h[6]*uu+h[7]*vv+1;
+        let x=(h[0]*uu+h[1]*vv+h[2])/den-0.5, y=(h[3]*uu+h[4]*vv+h[5])/den-0.5;
+        x=Math.max(0,Math.min(sw-1.001,x)); y=Math.max(0,Math.min(sh-1.001,y));
+        const x0=x|0, y0=y|0, fx=x-x0, fy=y-y0, i00=(y0*sw+x0)*4, i10=i00+4, i01=i00+sw*4, i11=i01+4, p=(v*ow+u)*4;
+        for(let c=0;c<3;c++) o[p+c]=(s[i00+c]*(1-fx)+s[i10+c]*fx)*(1-fy)+(s[i01+c]*(1-fx)+s[i11+c]*fx)*fy;
+        o[p+3]=255; } }
+    g.putImageData(od,0,0); return out;
+  }
+
+  /* ---- sheet: preview, corner editor, buttons ---- */
+  function idToolsText(){
+    document.getElementById("idAdjust").textContent = idEditing ? T("idDone") : (idMode==="full" ? T("idCrop") : T("idAdjust"));
+    document.getElementById("idRot").textContent=T("idRotate");
+    document.getElementById("idFull").textContent=T("idFullPhoto");
+    document.getElementById("idFull").hidden = idMode==="full";
+    document.getElementById("idRot").hidden = idMode==="full";
+  }
+  function idShowResult(){
+    idEditing=false; const p=document.getElementById("idPrev");
+    if(idMode==="full"){ idData={img:toJpeg(idSrc,1600)}; document.getElementById("idHint").textContent=T("idHintFull"); }
+    else { idData={img:toJpeg(warpCard(idSrc,idQuad),1400)}; document.getElementById("idHint").textContent=T("idHintAuto"); }
+    p.src=idData.img; p.hidden=false; document.getElementById("idEdit").hidden=true; idToolsText();
+  }
+  function idStartEdit(hintKey){
+    idEditing=true; idMode="crop"; idData=null;
+    document.getElementById("idPrev").hidden=true; const c=document.getElementById("idEdit"); c.hidden=false;
+    document.getElementById("idHint").textContent=T(hintKey||"idHintDrag"); idToolsText(); idDrawEdit();
+  }
+  function idEditGeom(){
+    const c=document.getElementById("idEdit"), cw=c.clientWidth||300, k=cw/idSrc.width, ch=Math.round(idSrc.height*k);
+    return {c,cw,ch,k};
+  }
+  function idDrawEdit(){
+    if(!idSrc||!idEditing) return;
+    const {c,cw,ch,k}=idEditGeom(), dpr=window.devicePixelRatio||1;
+    c.style.height=ch+"px"; c.width=Math.round(cw*dpr); c.height=Math.round(ch*dpr);
+    const g=c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.drawImage(idSrc,0,0,cw,ch);
+    const q=idQuad.map(([x,y])=>[x*k,y*k]);
+    g.fillStyle="rgba(0,0,0,.45)"; g.beginPath(); g.rect(0,0,cw,ch); g.moveTo(q[0][0],q[0][1]);
+    for(let i=3;i>=0;i--) g.lineTo(q[i][0],q[i][1]); g.closePath(); g.fill("evenodd");
+    g.strokeStyle="#ffd23f"; g.lineWidth=2.5; g.beginPath(); q.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y)); g.closePath(); g.stroke();
+    q.forEach(([x,y],i)=>{ g.beginPath(); g.arc(x,y,i===idDrag?16:13,0,Math.PI*2); g.fillStyle="rgba(255,210,63,.35)"; g.fill();
+      g.lineWidth=3; g.strokeStyle="#ffd23f"; g.stroke(); g.beginPath(); g.arc(x,y,2.5,0,Math.PI*2); g.fillStyle="#fff"; g.fill(); });
+  }
+  const idEditEl=document.getElementById("idEdit");
+  const idPt=e=>{ const r=idEditEl.getBoundingClientRect(), k=idEditGeom().k; return [(e.clientX-r.left)/k,(e.clientY-r.top)/k,k]; };
+  idEditEl.addEventListener("pointerdown",e=>{ if(!idEditing) return; const [x,y,k]=idPt(e); let bi=-1, bd=1e9;
+    idQuad.forEach(([qx,qy],i)=>{ const dd=Math.hypot(qx-x,qy-y)*k; if(dd<bd){ bd=dd; bi=i; } });
+    if(bd<=44){ idDrag=bi; idEditEl.setPointerCapture(e.pointerId); e.preventDefault(); idDrawEdit(); } });
+  idEditEl.addEventListener("pointermove",e=>{ if(idDrag<0) return; const [x,y]=idPt(e);
+    idQuad[idDrag]=[Math.max(0,Math.min(idSrc.width,x)),Math.max(0,Math.min(idSrc.height,y))]; idDrawEdit(); });
+  const idEndDrag=()=>{ if(idDrag<0) return; idDrag=-1; idDrawEdit(); };
+  idEditEl.addEventListener("pointerup",idEndDrag); idEditEl.addEventListener("pointercancel",idEndDrag);
+  window.addEventListener("resize",()=>{ if(idEditing) idDrawEdit(); });
+
+  document.getElementById("idAdjust").addEventListener("click",()=>{
+    if(!idSrc) return;
+    if(idEditing){ idQuad=orderQuad(idQuad); idMode="crop"; idShowResult(); }
+    else idStartEdit();
+  });
+  document.getElementById("idRot").addEventListener("click",()=>{
+    if(!idSrc) return; idQuad=[idQuad[3],idQuad[0],idQuad[1],idQuad[2]];   // turns the result 90°
+    if(idEditing) idDrawEdit(); else idShowResult();
+  });
+  document.getElementById("idFull").addEventListener("click",()=>{ if(!idSrc) return; idMode="full"; idShowResult(); });
+
   document.getElementById("idFile").addEventListener("change", async e=>{
     const f=e.target.files && e.target.files[0]; if(!f) return;
     const txt=document.getElementById("idTakeTxt"); txt.textContent=T("idProcessing");
-    try{ idData=await shrinkPhoto(f); const p=document.getElementById("idPrev"); p.src=idData.img; p.hidden=false;
-      txt.textContent=T("idRetake"); document.getElementById("idErr").textContent=""; }
-    catch(err){ console.error(err); idData=null; txt.textContent=T("idTake"); document.getElementById("idErr").textContent=T("idFail"); }
+    try{
+      const im=await loadImg(f);
+      idSrc=scaledCanvas(im,2000); idSrcData=null; idMode="crop";
+      document.getElementById("idWork").hidden=false;
+      await new Promise(r=>setTimeout(r,30));                       // let the "Preparing…" text show
+      const found=findCard(idSrc);
+      if(found){ idQuad=orderQuad(found); idShowResult(); }
+      else { const w=idSrc.width, h=idSrc.height, cw=Math.min(w*0.8, h*0.8*CARD_RATIO), chh=cw/CARD_RATIO;
+        idQuad=[[(w-cw)/2,(h-chh)/2],[(w+cw)/2,(h-chh)/2],[(w+cw)/2,(h+chh)/2],[(w-cw)/2,(h+chh)/2]];
+        idStartEdit("idHintNotFound"); }
+      txt.textContent=T("idRetake"); document.getElementById("idErr").textContent="";
+    }catch(err){ console.error(err); idReset(); document.getElementById("idErr").textContent=T("idFail"); }
     e.target.value="";
   });
   document.getElementById("idSaveBtn").addEventListener("click", async ()=>{
     const err=document.getElementById("idErr"), btn=document.getElementById("idSaveBtn"); err.textContent="";
+    if(idEditing && idSrc){ idQuad=orderQuad(idQuad); idShowResult(); }   // save what the corners show
     if(!idData){ err.textContent=T("idNoPhoto"); return; }
     if(!db){ err.textContent=T("idFail"); return; }
     if(idBusy) return; idBusy=true; btn.disabled=true; btn.textContent=T("idSaving");
