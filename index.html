@@ -182,6 +182,47 @@
   #toasts{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:120;pointer-events:none;padding:0 12px}
   .toast{background:var(--ink);color:#fff;font-size:.86rem;font-weight:500;padding:11px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);max-width:420px;opacity:0;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease}
   .toast.in{opacity:1;transform:translateY(0)}
+  /* ---- report export + income (stay) list ---- */
+  .rangetog{display:flex;gap:4px;background:#f1f3f2;border-radius:999px;padding:4px;margin-bottom:12px}
+  .rangetog button{flex:1;min-width:0;appearance:none;border:0;background:transparent;font-family:var(--body);font-size:.82rem;font-weight:600;color:var(--muted);padding:9px 6px;border-radius:999px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rangetog button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .exbtns{display:flex;gap:10px}
+  .exbtns .btn{flex:1;padding:13px;text-align:center}
+  .exbtns .btn:disabled{opacity:.6;cursor:default}
+  .staylist{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .staylist summary{cursor:pointer;font-weight:600;font-size:.9rem;padding:4px 0}
+  .staylist .snote{margin:6px 0 0}
+  .staylist .ulist{margin-top:10px}
+  /* printable report (only visible when printing / saving as PDF) */
+  #printReport{display:none}
+  .rp{font-family:var(--body);color:#111;font-size:10pt;line-height:1.35}
+  .rp h1{font-family:var(--disp);font-size:18pt;margin:0}
+  .rp .rpsub{color:#555;margin:3px 0 14px}
+  .rp h2{font-family:var(--disp);font-size:12pt;margin:18px 0 6px}
+  .rp .rpsum{display:flex;gap:8px}
+  .rp .rpsum div{flex:1;border:1px solid #ccc;border-radius:8px;padding:8px 10px}
+  .rp .rpsum b{display:block;font-family:var(--disp);font-size:14pt;white-space:nowrap}
+  .rp .rpsum span{font-size:8pt;text-transform:uppercase;letter-spacing:.06em;color:#555}
+  .rp .rpsum .pos b{color:#17784f}.rp .rpsum .neg b{color:#b3261e}
+  .rp table{width:100%;border-collapse:collapse}
+  .rp th{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#444;text-align:left;border-bottom:1.5px solid #333;padding:5px 6px}
+  .rp td{border-bottom:1px solid #ddd;padding:4px 6px;vertical-align:top}
+  .rp .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .rp tr.tot td{font-weight:700;border-top:1.5px solid #333;border-bottom:0}
+  .rp td.neg{color:#b3261e}
+  .rp .rpnote{color:#666;font-size:8pt;margin-top:4px}
+  .rp thead{display:table-header-group}
+  .rp tr{break-inside:avoid;page-break-inside:avoid}
+  .rp .two{display:flex;gap:18px;align-items:flex-start}.rp .two>div{flex:1}
+  .rp .empty{color:#777;padding:4px 0}
+  @media print{
+    @page{size:A4;margin:14mm 12mm}
+    html,body{background:#fff!important}
+    body{padding:0}
+    .wrap,.lock,.scrim,#toasts{display:none!important}
+    #printReport{display:block!important}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 </head>
@@ -274,6 +315,13 @@
     <section class="summary" id="accSummary"></section>
 
     <section class="card">
+      <h2 id="exportHeading">Report</h2>
+      <div class="rangetog" id="exRange"></div>
+      <div class="exbtns"><button class="btn" id="exPdf">PDF / Print</button><button class="btn" id="exXlsx">Excel</button></div>
+      <p class="snote" id="exportNote"></p>
+    </section>
+
+    <section class="card">
       <h2 id="addExpHeading">Add expense</h2>
       <div class="formgrid">
         <div><label for="exDate" id="lblExDate">Date</label><input type="date" id="exDate"></div>
@@ -293,6 +341,7 @@
         <div class="pricein"><input type="text" inputmode="numeric" id="priceInput"><button class="btn" id="priceSave">Save</button></div>
       </div>
       <p class="snote" id="incomeNote"></p>
+      <div id="stayBox"></div>
     </section>
 
     <section class="card">
@@ -328,6 +377,7 @@
 </div>
 
 <div id="toasts"></div>
+<div id="printReport" class="rp"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -408,7 +458,21 @@
       accTooMany:"Too many tries. Wait a few minutes and try again.", accOffline:"No connection — try again when online.",
       accNotSetup:"Accounts login is not set up in Firebase yet (Email/Password sign-in and the owner user).",
       accDeviceNote:"Accounts are unlocked on this device.", accLockBtn:"Lock this device",
-      confirmLock:"Lock Accounts on this device? You will need the code to open it again.", accLocked:"Accounts locked on this device" },
+      confirmLock:"Lock Accounts on this device? You will need the code to open it again.", accLocked:"Accounts locked on this device",
+      exportHeading:"Report", rangeAll:"All", exPdf:"PDF / Print", exXlsx:"Excel", exLoading:"Preparing…",
+      exportNote:"PDF opens the print window — choose “Save as PDF”. Excel downloads a file with Summary, Income and Expenses sheets.",
+      exFail:"Could not create the Excel file — check the connection and try again.",
+      rpTitle:"Accounts report", rpPeriod:"Period", rpGenerated:"Created", rpNights:"Room nights",
+      rpMonthly:"Monthly overview", rpMonth:"Month", rpByRoom:"Income by room", rpRoom:"Room", rpStays:"Room stays",
+      rpCheckIn:"Check-in", rpCheckOut:"Check-out", rpNightsCol:"Nights", rpPrice:"Price/night", rpAmount:"Amount (฿)",
+      rpDate:"Date", rpCategory:"Category", rpNote:"Note", rpTotal:"Total", rpShare:"Share",
+      rpNightsNote:"Nights = nights inside this period. A stay that crosses the start or end of the period is split.",
+      rpNone:"Nothing in this period.", stillOcc:"Still occupied",
+      sheetSummary:"Summary", sheetIncome:"Income", sheetExpenses:"Expenses",
+      staysHeading:"Room stays this month ({n})",
+      stayHint:"Tap × to delete a stay that was set Occupied by mistake. It is removed from income and occupancy statistics.",
+      confirmDelStay:"Delete this income?\n\n{room} · {dates}\n{amt}\n\nIt will be removed from income and occupancy statistics.",
+      stayDeleted:"Income deleted" },
     th:{ eyebrow:"แผนกต้อนรับรีสอร์ท", title:"กระดานห้องพัก", roomWord:"ห้อง",
       free:"ว่าง", occupied:"ไม่ว่าง", arrive:"เข้าพักวันนี้",
       roomsHeading:"ห้องพัก", clearAll:"ล้างทั้งหมด", upcomingHeading:"การจองที่กำลังจะมาถึง",
@@ -452,7 +516,21 @@
       accTooMany:"ลองหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่", accOffline:"ไม่มีการเชื่อมต่อ — ลองใหม่เมื่อออนไลน์",
       accNotSetup:"ยังไม่ได้ตั้งค่าการเข้าสู่ระบบบัญชีใน Firebase",
       accDeviceNote:"บัญชีปลดล็อกอยู่บนอุปกรณ์นี้", accLockBtn:"ล็อกอุปกรณ์นี้",
-      confirmLock:"ล็อกบัญชีบนอุปกรณ์นี้? ต้องใช้รหัสเพื่อเปิดอีกครั้ง", accLocked:"ล็อกบัญชีบนอุปกรณ์นี้แล้ว" }
+      confirmLock:"ล็อกบัญชีบนอุปกรณ์นี้? ต้องใช้รหัสเพื่อเปิดอีกครั้ง", accLocked:"ล็อกบัญชีบนอุปกรณ์นี้แล้ว",
+      exportHeading:"รายงาน", rangeAll:"ทั้งหมด", exPdf:"PDF / พิมพ์", exXlsx:"Excel", exLoading:"กำลังเตรียม…",
+      exportNote:"PDF จะเปิดหน้าต่างพิมพ์ — เลือก “บันทึกเป็น PDF”  Excel จะดาวน์โหลดไฟล์ที่มีแผ่นงาน สรุป รายรับ และรายจ่าย",
+      exFail:"สร้างไฟล์ Excel ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อแล้วลองใหม่",
+      rpTitle:"รายงานบัญชี", rpPeriod:"ช่วงเวลา", rpGenerated:"สร้างเมื่อ", rpNights:"จำนวนคืนที่เข้าพัก",
+      rpMonthly:"สรุปรายเดือน", rpMonth:"เดือน", rpByRoom:"รายรับตามห้อง", rpRoom:"ห้อง", rpStays:"รายการเข้าพัก",
+      rpCheckIn:"เช็คอิน", rpCheckOut:"เช็คเอาท์", rpNightsCol:"คืน", rpPrice:"ราคา/คืน", rpAmount:"จำนวนเงิน (฿)",
+      rpDate:"วันที่", rpCategory:"หมวดหมู่", rpNote:"หมายเหตุ", rpTotal:"รวม", rpShare:"สัดส่วน",
+      rpNightsNote:"จำนวนคืน = คืนที่อยู่ในช่วงเวลานี้ การเข้าพักที่คร่อมต้นหรือท้ายช่วงเวลาจะถูกแบ่ง",
+      rpNone:"ไม่มีรายการในช่วงเวลานี้", stillOcc:"ยังเข้าพักอยู่",
+      sheetSummary:"สรุป", sheetIncome:"รายรับ", sheetExpenses:"รายจ่าย",
+      staysHeading:"รายการเข้าพักเดือนนี้ ({n})",
+      stayHint:"แตะ × เพื่อลบการเข้าพักที่ตั้งเป็นไม่ว่างโดยผิดพลาด จะถูกลบออกจากรายรับและสถิติการเข้าพัก",
+      confirmDelStay:"ลบรายรับนี้?\n\n{room} · {dates}\n{amt}\n\nจะถูกลบออกจากรายรับและสถิติการเข้าพัก",
+      stayDeleted:"ลบรายรับแล้ว" }
   };
   let lang = (ls.get(LANG_KEY)==="th") ? "th" : "en";
   const T = k => (STR[lang][k] !== undefined ? STR[lang][k] : k);
@@ -632,7 +710,7 @@
     for(let i=11;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months.push({key:monthKey(d.getTime()), d}); }
     if(!selMonth || !months.some(m=>m.key===selMonth)) selMonth=months[11].key;
     const byMonth={}, byRoom={};
-    Object.values(stays).forEach(s=>{ if(!s||!s.month) return;
+    Object.values(stays).forEach(s=>{ if(!s||!s.month||s.deleted) return;
       byMonth[s.month]=(byMonth[s.month]||0)+1;
       if(s.month===selMonth) byRoom[s.room]=(byRoom[s.room]||0)+1; });
     const max=Math.max(1,...months.map(m=>byMonth[m.key]||0));
@@ -757,13 +835,25 @@
   function monthIncome(key){
     const now=Date.now(); let nights=0, total=0; const byRoom={}, byPrice={};
     Object.values(stays).forEach(s=>{
-      if(!s || !s.start) return;
+      if(!s || !s.start || s.deleted) return;
       const p = +s.price>0 ? +s.price : DEFAULT_PRICE;
       const k = stayNightMonths(s,now).filter(m=>m===key).length; if(!k) return;
       nights+=k; total+=k*p; byRoom[s.room]=(byRoom[s.room]||0)+k; byPrice[p]=(byPrice[p]||0)+k;
     });
     return {nights,total,byRoom,byPrice};
   }
+  /* the individual stays (income entries) of one month, newest first */
+  function monthStays(key){
+    const now=Date.now();
+    return Object.entries(stays).filter(([id,s])=>s && s.start && !s.deleted).map(([id,s])=>{
+      const p = +s.price>0 ? +s.price : DEFAULT_PRICE;
+      const k = stayNightMonths(s,now).filter(m=>m===key).length;
+      return {id, room:s.room, start:s.start, end:s.end||null, nights:k, price:p, amount:k*p};
+    }).filter(x=>x.nights).sort((a,b)=>b.start-a.start||a.room-b.room);
+  }
+  const fmtTs = ts => fmt(iso(new Date(ts)));
+  const nightsTxt = n => n+" "+(n===1?T("nightWord"):T("nightsWord"));
+  const stayDates = x => fmtTs(x.start)+" → "+(x.end?fmtTs(x.end):T("stillOcc"));
   const monthExpenses = key => Object.entries(accData.expenses||{})
     .filter(([id,e])=>e && typeof e.date==="string" && e.date.slice(0,7)===key)
     .map(([id,e])=>({id,...e}));
@@ -782,7 +872,8 @@
     const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
     ["tabBoard","tabAccounts","addExpHeading","lblExDate","lblExCat","lblExNote","lblExAmount","exAdd",
      "incomeHeading","lblPrice","priceSave","byCatHeading","expListHeading","copySalaries","incomeNote",
-     "accLockTitle","accLockSub","accDeviceNote","accLockBtn"].forEach(k=>set(k,T(k)));
+     "accLockTitle","accLockSub","accDeviceNote","accLockBtn","exportHeading","exPdf","exportNote"].forEach(k=>set(k,T(k)));
+    const xb=document.getElementById("exXlsx"); if(!xb.disabled) xb.textContent=T("exXlsx");
     const ub=document.getElementById("accUnlock"); if(!ub.disabled) ub.textContent=T("accUnlock");
     document.getElementById("exNote").placeholder=T("notePlaceholder");
     document.getElementById("exErr").textContent="";
@@ -817,6 +908,8 @@
     }
     document.getElementById("incomeBox").innerHTML=ih;
     const pin=document.getElementById("priceInput"); if(document.activeElement!==pin) pin.value=nightPrice();
+    renderStayList();
+    renderExportRange();
 
     // by category
     const byCat={}; exps.forEach(e=>{ byCat[e.cat]=(byCat[e.cat]||0)+(+e.amount||0); });
@@ -889,6 +982,258 @@
       const data={date:accMonth+"-"+String(day).padStart(2,"0"),cat:"salary",note:e.note||"",amount:+e.amount,createdAt:now+i};
       const id=newExpId()+i; patch[id]=data; accData.expenses[id]=data; });
     saveAcc({expenses:patch}); renderAccounts();
+  });
+
+  /* ---------------- income entries (room stays): list + delete ----------------
+     A deleted stay is NOT removed from the statistics document — it is marked
+     deleted:true. That way no device can count it again (a room that is still
+     occupied would otherwise re-add its stay after the 1-hour check), and it is
+     left out of income, occupancy statistics and reports. */
+  let staysOpen=false;
+  function renderStayList(){
+    const box=document.getElementById("stayBox"); const list=monthStays(accMonth);
+    if(!list.length){ box.innerHTML=""; return; }
+    box.innerHTML='<details class="staylist"'+(staysOpen?" open":"")+'><summary>'+esc(T("staysHeading").replace("{n}",list.length))+'</summary>'
+      +'<p class="snote">'+esc(T("stayHint"))+'</p><ul class="ulist">'
+      +list.map(x=>'<li class="urow"><span class="edate">'+fmtTs(x.start)+'</span>'
+        +'<div class="uinfo"><div class="r">'+T("roomWord")+' '+x.room+'</div>'
+        +'<div class="g">'+esc(stayDates(x))+' · '+esc(nightsTxt(x.nights))+' × '+baht(x.price)+'</div></div>'
+        +'<span class="eamt">'+baht(x.amount)+'</span>'
+        +'<button class="x" data-delstay="'+esc(x.id)+'" aria-label="delete">×</button></li>').join("")
+      +'</ul></details>';
+  }
+  const stayBoxEl=document.getElementById("stayBox");
+  stayBoxEl.addEventListener("toggle",e=>{ if(e.target.tagName==="DETAILS") staysOpen=e.target.open; },true);
+  stayBoxEl.addEventListener("click",e=>{
+    const b=e.target.closest("[data-delstay]"); if(!b) return;
+    const id=b.dataset.delstay; const x=monthStays(accMonth).find(s=>s.id===id); if(!x) return;
+    const msg=T("confirmDelStay").replace("{room}",T("roomWord")+" "+x.room).replace("{dates}",stayDates(x))
+      .replace("{amt}",nightsTxt(x.nights)+" × "+baht(x.price)+" = "+baht(x.amount));
+    if(!confirm(msg)) return;
+    writeStay(id,{deleted:true, deletedAt:Date.now()});
+    showToast(T("stayDeleted")); renderStats();
+  });
+
+  /* ---------------- REPORT: PDF (print) + Excel ---------------- */
+  const RESORT = ((document.querySelector('meta[name="apple-mobile-web-app-title"]')||{}).content||"Resort").trim();
+  const LOC = () => lang==="th"?"th-TH":"en-US";
+  let exRange="month";
+  const yearLabel = y => new Date(+y,0,1).toLocaleDateString(LOC(),{year:"numeric"});
+  const dFromIso = ds => { const p=ds.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
+  const fullDate = d => d.toLocaleDateString(LOC(),{day:"numeric",month:"short",year:"numeric"});
+  const signedBaht = v => (v<0?"−":"")+baht(Math.abs(v));
+
+  function renderExportRange(){
+    const y=accMonth.slice(0,4);
+    const opts=[["month",monthLabel(accMonth)],["year",yearLabel(y)],["all",T("rangeAll")]];
+    document.getElementById("exRange").innerHTML=opts.map(([k,l])=>
+      '<button data-range="'+k+'" class="'+(k===exRange?"active":"")+'">'+esc(l)+'</button>').join("");
+  }
+  document.getElementById("exRange").addEventListener("click",e=>{
+    const b=e.target.closest("[data-range]"); if(!b) return; exRange=b.dataset.range; renderExportRange(); });
+
+  function rangeMonths(kind){
+    const cur=curMonth();
+    if(kind==="month") return [accMonth];
+    let first, last=cur;
+    if(kind==="year"){ const y=accMonth.slice(0,4); first=y+"-01"; if(y+"-12"<cur) last=y+"-12"; }
+    else {
+      first=cur;
+      Object.values(stays).forEach(s=>{ if(s&&s.start&&!s.deleted){ const m=monthKey(s.start); if(m<first) first=m; } });
+      Object.values(accData.expenses||{}).forEach(e=>{ if(e&&typeof e.date==="string"){ const m=e.date.slice(0,7); if(m<first) first=m; } });
+    }
+    const out=[]; let k=first; while(k<=last && out.length<240){ out.push(k); k=shiftMonth(k,1); }
+    return out;
+  }
+
+  function buildReport(kind){
+    const months=rangeMonths(kind), inRange=new Set(months), now=Date.now();
+    const per={}; months.forEach(m=>per[m]={nights:0,income:0,exp:0});
+    const stayRows=[], byRoom={};
+    Object.entries(stays).forEach(([id,s])=>{
+      if(!s||!s.start||s.deleted) return;
+      const p=+s.price>0?+s.price:DEFAULT_PRICE; let k=0;
+      stayNightMonths(s,now).forEach(m=>{ if(inRange.has(m)){ k++; per[m].nights++; per[m].income+=p; } });
+      if(!k) return;
+      stayRows.push({id,room:s.room,start:s.start,end:s.end||null,nights:k,price:p,amount:k*p});
+      const br=byRoom[s.room]||(byRoom[s.room]={nights:0,amount:0}); br.nights+=k; br.amount+=k*p;
+    });
+    stayRows.sort((a,b)=>a.start-b.start||a.room-b.room);
+    const expRows=[], byCat={};
+    Object.entries(accData.expenses||{}).forEach(([id,e])=>{
+      if(!e||typeof e.date!=="string") return; const m=e.date.slice(0,7); if(!inRange.has(m)) return;
+      const a=+e.amount||0; per[m].exp+=a; byCat[e.cat]=(byCat[e.cat]||0)+a;
+      expRows.push({id,date:e.date,cat:e.cat,note:e.note||"",amount:a,createdAt:e.createdAt||0});
+    });
+    expRows.sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt-b.createdAt);
+    const income=stayRows.reduce((a,x)=>a+x.amount,0), exp=expRows.reduce((a,x)=>a+x.amount,0);
+    const nights=stayRows.reduce((a,x)=>a+x.nights,0);
+    const label = kind==="month" ? monthLabel(accMonth)
+      : kind==="year" ? yearLabel(accMonth.slice(0,4))
+      : (months.length>1 ? monthLabel(months[0])+" – "+monthLabel(months[months.length-1]) : monthLabel(months[0]));
+    const tag = kind==="month" ? accMonth : kind==="year" ? accMonth.slice(0,4) : "all";
+    const fileName = ("Accounts "+RESORT+" "+tag).replace(/[\\/:*?"<>|]/g,"-");
+    const created = new Date().toLocaleString(LOC(),{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    return {kind,months,per,stayRows,byRoom,expRows,byCat,income,exp,nights,result:income-exp,label,fileName,created};
+  }
+
+  /* ---- PDF: fill the hidden report and open the print window ("Save as PDF") ---- */
+  function reportHtml(R){
+    const td = v => '<td class="n">'+baht(v)+'</td>';
+    const tdS = v => '<td class="n'+(v<0?" neg":"")+'">'+signedBaht(v)+'</td>';
+    let h='<h1>'+esc(RESORT)+' — '+esc(T("rpTitle"))+'</h1>'
+      +'<div class="rpsub">'+esc(T("rpPeriod"))+': <b>'+esc(R.label)+'</b> · '+esc(T("rpGenerated"))+': '+esc(R.created)+'</div>'
+      +'<div class="rpsum"><div><span>'+esc(T("income"))+'</span><b>'+baht(R.income)+'</b></div>'
+      +'<div><span>'+esc(T("expenses"))+'</span><b>'+baht(R.exp)+'</b></div>'
+      +'<div class="'+(R.result<0?"neg":"pos")+'"><span>'+esc(T("result"))+'</span><b>'+signedBaht(R.result)+'</b></div>'
+      +'<div><span>'+esc(T("rpNights"))+'</span><b>'+R.nights+'</b></div></div>';
+    if(R.months.length>1){
+      h+='<h2>'+esc(T("rpMonthly"))+'</h2><table><thead><tr><th>'+esc(T("rpMonth"))+'</th><th class="n">'+esc(T("rpNightsCol"))+'</th><th class="n">'
+        +esc(T("income"))+'</th><th class="n">'+esc(T("expenses"))+'</th><th class="n">'+esc(T("result"))+'</th></tr></thead><tbody>'
+        +R.months.map(m=>{ const p=R.per[m]; return '<tr><td>'+esc(monthLabel(m))+'</td><td class="n">'+p.nights+'</td>'+td(p.income)+td(p.exp)+tdS(p.income-p.exp)+'</tr>'; }).join("")
+        +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.income)+td(R.exp)+tdS(R.result)+'</tr></tbody></table>';
+    }
+    const rooms=Object.keys(R.byRoom).map(Number).sort((a,b)=>a-b);
+    const cats=Object.keys(R.byCat).sort((a,b)=>R.byCat[b]-R.byCat[a]);
+    h+='<div class="two"><div><h2>'+esc(T("rpByRoom"))+'</h2>'+(rooms.length
+        ? '<table><thead><tr><th>'+esc(T("rpRoom"))+'</th><th class="n">'+esc(T("rpNightsCol"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th></tr></thead><tbody>'
+          +rooms.map(r=>'<tr><td>'+esc(T("roomWord"))+' '+r+'</td><td class="n">'+R.byRoom[r].nights+'</td>'+td(R.byRoom[r].amount)+'</tr>').join("")
+          +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td>'+td(R.income)+'</tr></tbody></table>'
+        : '<div class="empty">'+esc(T("rpNone"))+'</div>')+'</div>'
+      +'<div><h2>'+esc(T("byCatHeading"))+'</h2>'+(cats.length
+        ? '<table><thead><tr><th>'+esc(T("rpCategory"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th><th class="n">'+esc(T("rpShare"))+'</th></tr></thead><tbody>'
+          +cats.map(c=>'<tr><td>'+esc(T("cat_"+c))+'</td>'+td(R.byCat[c])+'<td class="n">'+(R.exp?Math.round(R.byCat[c]/R.exp*100):0)+'%</td></tr>').join("")
+          +'<tr class="tot"><td>'+esc(T("rpTotal"))+'</td>'+td(R.exp)+'<td class="n">100%</td></tr></tbody></table>'
+        : '<div class="empty">'+esc(T("rpNone"))+'</div>')+'</div></div>';
+    h+='<h2>'+esc(T("rpStays"))+'</h2>'+(R.stayRows.length
+      ? '<table><thead><tr><th>'+esc(T("rpCheckIn"))+'</th><th>'+esc(T("rpCheckOut"))+'</th><th>'+esc(T("rpRoom"))+'</th><th class="n">'
+        +esc(T("rpNightsCol"))+'</th><th class="n">'+esc(T("rpPrice"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th></tr></thead><tbody>'
+        +R.stayRows.map(x=>'<tr><td>'+esc(fullDate(new Date(x.start)))+'</td><td>'+esc(x.end?fullDate(new Date(x.end)):T("stillOcc"))+'</td><td>'
+          +esc(T("roomWord"))+' '+x.room+'</td><td class="n">'+x.nights+'</td>'+td(x.price)+td(x.amount)+'</tr>').join("")
+        +'<tr class="tot"><td colspan="3">'+esc(T("rpTotal"))+'</td><td class="n">'+R.nights+'</td><td></td>'+td(R.income)+'</tr></tbody></table>'
+        +'<div class="rpnote">'+esc(T("rpNightsNote"))+'</div>'
+      : '<div class="empty">'+esc(T("rpNone"))+'</div>');
+    h+='<h2>'+esc(T("expenses"))+'</h2>'+(R.expRows.length
+      ? '<table><thead><tr><th>'+esc(T("rpDate"))+'</th><th>'+esc(T("rpCategory"))+'</th><th>'+esc(T("rpNote"))+'</th><th class="n">'+esc(T("rpAmount"))+'</th></tr></thead><tbody>'
+        +R.expRows.map(e=>'<tr><td>'+esc(fullDate(dFromIso(e.date)))+'</td><td>'+esc(T("cat_"+e.cat))+'</td><td>'+esc(e.note)+'</td>'+td(e.amount)+'</tr>').join("")
+        +'<tr class="tot"><td colspan="3">'+esc(T("rpTotal"))+'</td>'+td(R.exp)+'</tr></tbody></table>'
+      : '<div class="empty">'+esc(T("rpNone"))+'</div>');
+    return h;
+  }
+  let savedTitle=null;
+  function restoreTitle(){ if(savedTitle!==null){ document.title=savedTitle; savedTitle=null; } }
+  window.addEventListener("afterprint", restoreTitle);
+  document.getElementById("exPdf").addEventListener("click",()=>{
+    if(!isOwner) return;
+    const R=buildReport(exRange);
+    document.getElementById("printReport").innerHTML=reportHtml(R);
+    restoreTitle(); savedTitle=document.title; document.title=R.fileName;   // becomes the PDF file name
+    setTimeout(()=>window.print(), 60);
+  });
+
+  /* ---- Excel: real .xlsx with Summary / Income / Expenses sheets (SheetJS, loaded only when needed) ---- */
+  let xlsxLoading=null;
+  function loadXLSX(){
+    if(window.XLSX) return Promise.resolve(window.XLSX);
+    if(!xlsxLoading) xlsxLoading=new Promise((res,rej)=>{ const s=document.createElement("script");
+      s.src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      s.onload=()=>window.XLSX?res(window.XLSX):rej(new Error("XLSX missing"));
+      s.onerror=()=>{ xlsxLoading=null; s.remove(); rej(new Error("XLSX load failed")); };
+      document.head.appendChild(s); });
+    return xlsxLoading;
+  }
+  const MONEY_FMT="#,##0.00";
+  const xm = v => ({t:"n", v:Math.round(v*100)/100, z:MONEY_FMT});
+  const xd = d => ({t:"n", v:(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(1899,11,30))/DAY, z:"d mmm yyyy"});
+  const xf = (f,v,z) => ({t:"n", v:Math.round(v*100)/100, f, z:z||MONEY_FMT});
+  function mkSheet(X, rows, widths){
+    const ws={}; let maxC=0;
+    rows.forEach((row,r)=>(row||[]).forEach((v,c)=>{
+      if(v===null||v===undefined||v==="") return;
+      ws[X.utils.encode_cell({r,c})] = typeof v==="object" ? v : typeof v==="number" ? {t:"n",v} : {t:"s",v:String(v)};
+      if(c>maxC) maxC=c; }));
+    ws["!ref"]=X.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(0,rows.length-1),c:maxC}});
+    if(widths) ws["!cols"]=widths.map(w=>({wch:w}));
+    return ws;
+  }
+  function buildWorkbook(X, R){
+    // Summary
+    const s=[];
+    s.push([RESORT+" — "+T("rpTitle")]);
+    s.push([T("rpPeriod"), R.label]);
+    s.push([T("rpGenerated"), R.created]);
+    s.push([]);
+    s.push([T("income"), xm(R.income)]);
+    s.push([T("expenses"), xm(R.exp)]);
+    s.push([T("result"), xm(R.result)]);
+    s.push([T("rpNights"), R.nights]);
+    s.push([]);
+    s.push([T("rpMonthly")]);
+    s.push([T("rpMonth"), T("rpNightsCol"), T("income"), T("expenses"), T("result")]);
+    const m0=s.length+1;
+    R.months.forEach(m=>{ const p=R.per[m]; const r=s.length+1;
+      s.push([monthLabel(m), p.nights, xm(p.income), xm(p.exp), xf("C"+r+"-D"+r, p.income-p.exp)]); });
+    const m1=s.length;
+    s.push([T("rpTotal"), {t:"n",v:R.nights,f:"SUM(B"+m0+":B"+m1+")"}, xf("SUM(C"+m0+":C"+m1+")",R.income),
+      xf("SUM(D"+m0+":D"+m1+")",R.exp), xf("SUM(E"+m0+":E"+m1+")",R.result)]);
+    s.push([]);
+    s.push([T("byCatHeading")]);
+    s.push([T("rpCategory"), T("rpAmount")]);
+    const cats=Object.keys(R.byCat).sort((a,b)=>R.byCat[b]-R.byCat[a]);
+    if(cats.length){ const c0=s.length+1;
+      cats.forEach(c=>s.push([T("cat_"+c), xm(R.byCat[c])]));
+      s.push([T("rpTotal"), xf("SUM(B"+c0+":B"+s.length+")", R.exp)]); }
+    else s.push([T("rpNone")]);
+    s.push([]);
+    s.push([T("rpByRoom")]);
+    s.push([T("rpRoom"), T("rpNightsCol"), T("rpAmount")]);
+    const rooms=Object.keys(R.byRoom).map(Number).sort((a,b)=>a-b);
+    if(rooms.length){ const r0=s.length+1;
+      rooms.forEach(r=>s.push([T("roomWord")+" "+r, R.byRoom[r].nights, xm(R.byRoom[r].amount)]));
+      const r1=s.length;
+      s.push([T("rpTotal"), {t:"n",v:R.nights,f:"SUM(B"+r0+":B"+r1+")"}, xf("SUM(C"+r0+":C"+r1+")", R.income)]); }
+    else s.push([T("rpNone")]);
+
+    // Income (one row per stay)
+    const inc=[[T("rpCheckIn"), T("rpCheckOut"), T("rpRoom"), T("rpNightsCol"), T("rpPrice"), T("rpAmount")]];
+    R.stayRows.forEach(x=>inc.push([xd(new Date(x.start)), x.end?xd(new Date(x.end)):T("stillOcc"), T("roomWord")+" "+x.room,
+      x.nights, xm(x.price), xm(x.amount)]));
+    const ni=inc.length;
+    inc.push([T("rpTotal"), "", "", ni>1?{t:"n",v:R.nights,f:"SUM(D2:D"+ni+")"}:0, "", ni>1?xf("SUM(F2:F"+ni+")",R.income):xm(0)]);
+    inc.push([]); inc.push([T("rpNightsNote")]);
+
+    // Expenses
+    const ex=[[T("rpDate"), T("rpCategory"), T("rpNote"), T("rpAmount")]];
+    R.expRows.forEach(e=>ex.push([xd(dFromIso(e.date)), T("cat_"+e.cat), e.note, xm(e.amount)]));
+    const ne=ex.length;
+    ex.push([T("rpTotal"), "", "", ne>1?xf("SUM(D2:D"+ne+")",R.exp):xm(0)]);
+
+    const wb=X.utils.book_new();
+    X.utils.book_append_sheet(wb, mkSheet(X,s,[30,16,16,16,16]), T("sheetSummary"));
+    X.utils.book_append_sheet(wb, mkSheet(X,inc,[15,15,12,9,13,14]), T("sheetIncome"));
+    X.utils.book_append_sheet(wb, mkSheet(X,ex,[15,26,34,14]), T("sheetExpenses"));
+    return wb;
+  }
+  async function saveFile(blob, name){
+    const file = (typeof File==="function") ? new File([blob], name, {type:blob.type}) : null;
+    // iPhone home-screen app cannot download files — use the share sheet there (Save to Files, LINE, Mail …)
+    if(file && navigator.standalone===true && navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:name}); return; }catch(e){ if(e && e.name==="AbortError") return; }
+    }
+    const url=URL.createObjectURL(blob); const a=document.createElement("a");
+    a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 10000);
+  }
+  document.getElementById("exXlsx").addEventListener("click", async ()=>{
+    if(!isOwner) return;
+    const btn=document.getElementById("exXlsx"); if(btn.disabled) return;
+    btn.disabled=true; btn.textContent=T("exLoading");
+    try{
+      const X=await loadXLSX(); const R=buildReport(exRange);
+      const out=X.write(buildWorkbook(X,R), {bookType:"xlsx", type:"array"});
+      await saveFile(new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), R.fileName+".xlsx");
+    }catch(e){ console.error(e); showToast(T("exFail")); }
+    btn.disabled=false; btn.textContent=T("exXlsx");
   });
 
   /* ---------------- language toggle ---------------- */
