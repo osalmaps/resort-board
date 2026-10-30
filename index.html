@@ -489,7 +489,7 @@
       syncSaveFail:"Save failed — retry", syncNotConfigured:"Not configured", syncConfigError:"Config error", syncAuthFail:"Sign-in failed",
       lockTitle:"Front Desk Access", lockSub:"Enter the staff passcode to open the room board.",
       lockBtn:"Unlock", lockWrong:"Wrong passcode — try again.",
-      confirmClear:"Clear all rooms? This sets every room to Free and removes all bookings.",
+      confirmClear:"Clear all rooms? This sets every room to Free and removes all bookings and breakfast orders.",
       alertDate:"Please choose an arrival date.", alertPast:"Pick today or a future date.",
       notifStatus:"Room status changed", boardUpdated:"Board updated", notifReminder:"Arrivals tomorrow",
       statsHeading:"Occupancy statistics", roomsOccupied:"rooms occupied",
@@ -558,7 +558,7 @@
       syncSaveFail:"บันทึกไม่สำเร็จ — ลองใหม่", syncNotConfigured:"ยังไม่ได้ตั้งค่า", syncConfigError:"ตั้งค่าผิดพลาด", syncAuthFail:"เข้าสู่ระบบไม่สำเร็จ",
       lockTitle:"เข้าสู่แผนกต้อนรับ", lockSub:"ใส่รหัสผ่านพนักงานเพื่อเปิดกระดานห้องพัก",
       lockBtn:"ปลดล็อก", lockWrong:"รหัสผ่านไม่ถูกต้อง — ลองอีกครั้ง",
-      confirmClear:"ล้างห้องทั้งหมด? ทุกห้องจะถูกตั้งเป็นว่างและลบการจองทั้งหมด",
+      confirmClear:"ล้างห้องทั้งหมด? ทุกห้องจะถูกตั้งเป็นว่างและลบการจองและอาหารเช้าทั้งหมด",
       alertDate:"กรุณาเลือกวันที่เข้าพัก", alertPast:"กรุณาเลือกวันนี้หรือวันในอนาคต",
       notifStatus:"สถานะห้องเปลี่ยนแปลง", boardUpdated:"อัปเดตกระดานแล้ว", notifReminder:"ผู้เข้าพักพรุ่งนี้",
       statsHeading:"สถิติการเข้าพัก", roomsOccupied:"ห้องที่มีผู้เข้าพัก",
@@ -670,6 +670,15 @@
   const bfSig = r => roomBf(r).map(b=>b.date+":"+b.set+":"+b.qty).sort().join("|");
   const bfRow = (id,b) => { const p = +b.price>0 ? +b.price : bfPrice(b.set);
     return {id, room:b.room, date:b.date, set:+b.set, qty:+b.qty, price:p, amount:p*b.qty}; };
+
+  /* room set back to Free (guest left) or Clear all: its breakfast orders are cleared so the next guest starts fresh.
+     Orders for today or earlier stay in the accounts (breakfast already served); later dates are cancelled. */
+  function clearRoomBf(r){
+    const t=todayStr();
+    (r.breakfast||[]).forEach(b=>{ if(!b || typeof b.date!=="string" || b.date<=t) return;
+      const id=bfId(r.id,b.date,b.set); if(bfRecs[id] && !bfRecs[id].deleted) writeBf(id,{deleted:true, deletedAt:Date.now()}); });
+    delete r.breakfast; prevBf[r.id]=bfSig(r);
+  }
 
   function writeStay(id, data){
     stays[id] = Object.assign({}, stays[id]||{}, data);
@@ -904,7 +913,7 @@
 
   /* hold a tile to change its status (prevents accidental taps) */
   function toggleRoom(id){ const r=state.rooms.find(x=>x.id===id); if(!r) return;
-    if(r.status==="occupied"){ closeStay(r); r.status="free"; }
+    if(r.status==="occupied"){ closeStay(r); clearRoomBf(r); r.status="free"; }
     else { r.status="occupied"; r.occSince=Date.now(); r.stayId=newStayId(); }
     localSound(r); persist(); }
   const HOLD_MS=550; let holdFace=null,holdTimer=null,holdRAF=null;
@@ -925,8 +934,8 @@
   document.getElementById("clearAll").addEventListener("click",()=>{
     if(!confirm(T("confirmClear"))) return;
     state.rooms.forEach(r=>{ if(r.status==="occupied") closeStay(r); });  // stays already past 1 h stay counted
-    const keepBf={}; state.rooms.forEach(r=>{ if(r.breakfast && r.breakfast.length) keepBf[r.id]=r.breakfast; });  // breakfast orders are kept
-    state=defaultState(); state.rooms.forEach(r=>{ prevView[r.id]="free"; if(keepBf[r.id]) r.breakfast=keepBf[r.id]; }); persist();
+    state.rooms.forEach(clearRoomBf);
+    state=defaultState(); state.rooms.forEach(r=>{ prevView[r.id]="free"; prevBf[r.id]=""; }); persist();
   });
 
   /* ---------------- breakfast sheet ---------------- */
