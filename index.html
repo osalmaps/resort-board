@@ -440,6 +440,9 @@
     <p class="sub" id="sheetSub"></p>
     <label for="bdate" id="labelDate">Arrival date</label>
     <input type="date" id="bdate">
+    <label for="bdate2" id="labelDeparture">Departure date (check-out)</label>
+    <input type="date" id="bdate2">
+    <p class="snote" id="bnights" style="margin:-8px 0 14px;font-weight:600;color:var(--arrive)"></p>
     <label for="bguest" id="labelGuest">Guest name (optional)</label>
     <input type="text" id="bguest" autocomplete="off">
     <div class="sheet-actions">
@@ -557,6 +560,9 @@
       lockBtn:"Unlock", lockWrong:"Wrong passcode — try again.",
       confirmClear:"Clear all rooms? This sets every room to Free and removes all bookings and breakfast orders.",
       alertDate:"Please choose an arrival date.", alertPast:"Pick today or a future date.",
+      labelDeparture:"Departure date (check-out)", alertDeparture:"The departure date must be after the arrival date.",
+      confirmOverlap:"{room} is already booked for some of these nights:\n{dates}{guest}\n\nSave anyway?",
+      checkoutTile:"Check-out: {d}", checkoutToday:"Check-out today", stayingWord:"Staying",
       notifStatus:"Room status changed", boardUpdated:"Board updated", notifReminder:"Arrivals tomorrow",
       statsHeading:"Occupancy statistics", roomsOccupied:"rooms occupied",
       noStats:"No occupancies counted in this month.",
@@ -650,6 +656,9 @@
       lockBtn:"ปลดล็อก", lockWrong:"รหัสผ่านไม่ถูกต้อง — ลองอีกครั้ง",
       confirmClear:"ล้างห้องทั้งหมด? ทุกห้องจะถูกตั้งเป็นว่างและลบการจองและอาหารเช้าทั้งหมด",
       alertDate:"กรุณาเลือกวันที่เข้าพัก", alertPast:"กรุณาเลือกวันนี้หรือวันในอนาคต",
+      labelDeparture:"วันที่เช็คเอาท์", alertDeparture:"วันที่เช็คเอาท์ต้องอยู่หลังวันที่เข้าพัก",
+      confirmOverlap:"{room} มีการจองบางคืนนี้อยู่แล้ว:\n{dates}{guest}\n\nบันทึกต่อหรือไม่?",
+      checkoutTile:"เช็คเอาท์: {d}", checkoutToday:"เช็คเอาท์วันนี้", stayingWord:"เข้าพักอยู่",
       notifStatus:"สถานะห้องเปลี่ยนแปลง", boardUpdated:"อัปเดตกระดานแล้ว", notifReminder:"ผู้เข้าพักพรุ่งนี้",
       statsHeading:"สถิติการเข้าพัก", roomsOccupied:"ห้องที่มีผู้เข้าพัก",
       noStats:"ยังไม่มีการเข้าพักที่นับในเดือนนี้",
@@ -900,10 +909,18 @@
   const viewStatus = r => r.status==="occupied" ? "occupied"
     : (r.bookings||[]).some(b=>b.date===todayStr()) ? "arrive" : "free";
   const hasFuturePip = r => (r.bookings||[]).some(b=>b.date>todayStr());
-  const nextBooking = r => (r.bookings||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))[0]||null;
+  /* a booking = {id, date: arrival day, until: departure (check-out) day, guest}.
+     Older bookings without "until" are 1 night. A booking stays on the board until its check-out day has passed. */
+  const addDays = (ds,n) => { const p=ds.split("-"); return iso(new Date(+p[0],+p[1]-1,+p[2]+n)); };
+  const nightsBetween = (a,b) => { const p=a.split("-"), q=b.split("-"); return Math.round((Date.UTC(+q[0],+q[1]-1,+q[2])-Date.UTC(+p[0],+p[1]-1,+p[2]))/86400000); };
+  const bkUntil = b => (typeof b.until==="string" && b.until>b.date) ? b.until : addDays(b.date,1);
+  const bkRange = b => { const n=nightsBetween(b.date,bkUntil(b)); return fmt(b.date)+" → "+fmt(bkUntil(b))+" · "+n+" "+(n===1?T("nightWord"):T("nightsWord")); };
+  const nextBooking = r => (r.bookings||[]).filter(b=>b.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;
+  /* the booking of the guest staying now (arrived on/before today, leaving today or later) */
+  const curBooking = r => (r.bookings||[]).filter(b=>b.date<=todayStr() && bkUntil(b)>=todayStr()).sort((a,b)=>b.date.localeCompare(a.date))[0]||null;
 
   function purgePast(){ const t=todayStr(); let ch=false;
-    state.rooms.forEach(r=>{ const n=(r.bookings||[]).length; r.bookings=(r.bookings||[]).filter(b=>b.date>=t);
+    state.rooms.forEach(r=>{ const n=(r.bookings||[]).length; r.bookings=(r.bookings||[]).filter(b=>bkUntil(b)>=t);
       if(r.bookings.length!==n) ch=true;
       if(r.breakfast){ const m=r.breakfast.length; r.breakfast=r.breakfast.filter(b=>b && b.date>=t);   // accounts copy is kept
         if(r.breakfast.length!==m) ch=true; } }); return ch; }
@@ -920,7 +937,7 @@
     set("eyebrow",T("eyebrow")); set("title",T("title")); set("roomsHeading",T("roomsHeading"));
     set("clearAll",T("clearAll")); set("upcomingHeading",T("upcomingHeading")); set("footer",T("footer"));
     set("lockTitle",T("lockTitle")); set("lockSub",T("lockSub")); set("unlockBtn",T("lockBtn"));
-    set("sheetTitle",T("sheetTitle")); set("labelDate",T("labelDate")); set("labelGuest",T("labelGuest"));
+    set("sheetTitle",T("sheetTitle")); set("labelDate",T("labelDate")); set("labelDeparture",T("labelDeparture")); set("labelGuest",T("labelGuest"));
     set("bcancel",T("cancel")); set("bsave",T("saveBooking"));
     set("xbTitle",T("xbTitle")); set("xbLbl",T("xbLbl")); set("xbNote",T("xbNote")); set("xbCancel",T("cancel")); set("xbSave",T("priceSave"));
     set("bfTitle",T("bfTitle")); set("bfLblDate",T("bfLblDate")); set("bfCancel",T("cancel")); set("bfSave",T("priceSave"));
@@ -945,8 +962,10 @@
       if(vs==="free")free++; else if(vs==="occupied")occ++; else arr++;
       const label=T(vs);
       const nb=nextBooking(r); let nextHtml="";
+      if(r.status==="occupied"){ const cb=curBooking(r);
+        if(cb){ const u=bkUntil(cb); nextHtml='<div class="next">🧳 '+esc(u===todayStr()?T("checkoutToday"):T("checkoutTile").replace("{d}",fmt(u)))+(cb.guest?" · "+esc(cb.guest):"")+'</div>'; } }
       if(nb){ const who=nb.guest?(" · "+esc(nb.guest)):""; const tag=nb.date===todayStr()?T("todayWord"):fmt(nb.date);
-        nextHtml='<div class="next">'+T("nextArrival")+tag+who+'</div>'; }
+        nextHtml+='<div class="next">'+T("nextArrival")+tag+" → "+esc(fmt(bkUntil(nb)))+who+'</div>'; }
       if(inGrace(r)) nextHtml='<div class="next">⏳ '+T("countsInTile").replace("{m}",minsLeft(r))+'</div>'+nextHtml;
       const bd=nextBfDate(r); let bfHtml="";
       if(bd){ const items=roomBf(r).filter(b=>b.date===bd).sort((a,b)=>a.set-b.set);
@@ -1044,9 +1063,9 @@
     items.sort((a,b)=>a.date.localeCompare(b.date)||a.room-b.room);
     ul.innerHTML="";
     if(!items.length){ ul.innerHTML='<li class="empty">'+T("noBookings")+'</li>'; return; }
-    items.forEach(it=>{ const li=document.createElement("li"); li.className="urow"; const today=it.date===t;
-      li.innerHTML='<span class="udate '+(today?"today":"")+'">'+(today?T("todayWord"):fmt(it.date))+'</span>'
-        +'<div class="uinfo"><div class="r">'+T("roomWord")+' '+it.room+'</div><div class="g">'+(it.guest?esc(it.guest):T("noGuest"))+'</div></div>'
+    items.forEach(it=>{ const li=document.createElement("li"); li.className="urow"; const today=it.date===t, staying=it.date<t;
+      li.innerHTML='<span class="udate '+(today?"today":"")+'">'+(today?T("todayWord"):staying?T("stayingWord"):fmt(it.date))+'</span>'
+        +'<div class="uinfo"><div class="r">'+T("roomWord")+' '+it.room+' · '+esc(bkRange(it))+'</div><div class="g">'+(it.guest?esc(it.guest):T("noGuest"))+'</div></div>'
         +'<button class="x" data-del="'+it.room+':'+it.id+'" aria-label="remove">×</button>';
       ul.appendChild(li); });
   }
@@ -1169,9 +1188,15 @@
 
   /* ---------------- booking sheet ---------------- */
   let bookingRoom=null; const scrim=document.getElementById("scrim");
+  function bkNightsTxt(){ const a=document.getElementById("bdate").value, b=document.getElementById("bdate2").value;
+    document.getElementById("bnights").textContent = (a&&b&&b>a) ? bkRange({date:a,until:b}) : ""; }
   function openSheet(id){ bookingRoom=id; document.getElementById("sheetSub").textContent=T("roomWord")+" "+id;
-    const d=document.getElementById("bdate"); d.min=todayStr(); d.value=todayStr();
+    const d=document.getElementById("bdate"), d2=document.getElementById("bdate2");
+    d.min=todayStr(); d.value=todayStr(); d2.min=addDays(todayStr(),1); d2.value=addDays(todayStr(),1); bkNightsTxt();
     document.getElementById("bguest").value=""; scrim.classList.add("open"); setTimeout(()=>d.focus(),50); }
+  document.getElementById("bdate").addEventListener("change",()=>{ const a=document.getElementById("bdate").value, d2=document.getElementById("bdate2");
+    if(a){ d2.min=addDays(a,1); if(!d2.value || d2.value<=a) d2.value=addDays(a,1); } bkNightsTxt(); });
+  document.getElementById("bdate2").addEventListener("change",bkNightsTxt);
   function closeSheet(){ scrim.classList.remove("open"); bookingRoom=null; }
   document.getElementById("bcancel").addEventListener("click",closeSheet);
   scrim.addEventListener("click",e=>{ if(e.target===scrim)closeSheet(); });
@@ -1180,9 +1205,15 @@
     const date=document.getElementById("bdate").value;
     if(!date){alert(T("alertDate"));return;}
     if(date<todayStr()){alert(T("alertPast"));return;}
+    const until=document.getElementById("bdate2").value;
+    if(!until || until<=date){ alert(T("alertDeparture")); return; }
     const guest=document.getElementById("bguest").value.trim();
     const r=state.rooms.find(x=>x.id===bookingRoom);
-    (r.bookings=r.bookings||[]).push({id:"b"+Date.now()+Math.random().toString(36).slice(2,6),date,guest});
+    // warn if the room is already booked for any of these nights
+    const clash=(r.bookings||[]).find(b=>b.date<until && date<bkUntil(b));
+    if(clash && !confirm(T("confirmOverlap").replace("{room}",T("roomWord")+" "+r.id).replace("{dates}",bkRange(clash))
+      .replace("{guest}",clash.guest?" ("+clash.guest+")":""))) return;
+    (r.bookings=r.bookings||[]).push({id:"b"+Date.now()+Math.random().toString(36).slice(2,6),date,until,guest});
     closeSheet(); localSound(r); persist();
   });
 
